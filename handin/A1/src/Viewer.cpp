@@ -6,8 +6,11 @@
 #include <iostream>
 #include <math.h>
 // #include <GL/gl.h>
-#include <GL/glu.h>
-
+#ifndef _APPLE_
+  #include <OpenGL/glu.h>
+#else
+  #include <GL/glu.h>
+#endif
 
 #ifndef GL_MULTISAMPLE
 #define GL_MULTISAMPLE 0x809D
@@ -15,12 +18,7 @@
 
 Viewer::Viewer(const QGLFormat& format, QWidget *parent)
     : QGLWidget(format, parent)
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 1, 0))
-    , mVertexBufferObject(QOpenGLBuffer::VertexBuffer)
-    , mVertexArrayObject(this)
-#else
-    , mVertexBufferObject(QGLBuffer::VertexBuffer)
-#endif
+    , mVAO(0)
 {
     mTimer = new QTimer(this);
     connect(mTimer, SIGNAL(timeout()), this, SLOT(update()));
@@ -80,11 +78,11 @@ void Viewer::initializeGL() {
 
 
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 1, 0))
-    mVertexArrayObject.create();
-    mVertexArrayObject.bind();
+    glGenVertexArrays(1, &this->mVAO);
+    glBindVertexArray(this->mVAO);
 
-    mVertexBufferObject.create();
-    mVertexBufferObject.setUsagePattern(QOpenGLBuffer::StaticDraw);
+    glGenBuffers(VBO::MAX_VBO, this->mVBO);
+    glBindBuffer(GL_ARRAY_BUFFER, this->mVBO[VBO::TRIANGLE]);
 #else
 
     /*
@@ -92,8 +90,6 @@ void Viewer::initializeGL() {
      * instead of QOpenGLVertexVufferObject. Also use QGLBuffer instead of
      * QOpenGLBuffer.
      */
-    uint vao;
-
     typedef void (APIENTRY *_glGenVertexArrays) (GLsizei, GLuint*);
     typedef void (APIENTRY *_glBindVertexArray) (GLuint);
 
@@ -103,19 +99,17 @@ void Viewer::initializeGL() {
     glGenVertexArrays = (_glGenVertexArrays) QGLWidget::context()->getProcAddress("glGenVertexArrays");
     glBindVertexArray = (_glBindVertexArray) QGLWidget::context()->getProcAddress("glBindVertexArray");
 
-    glGenVertexArrays(1, &vao);
-    glBindVertexArray(vao);
+    glGenVertexArrays(1, &this->mVAO);
+    glBindVertexArray(this->mVAO);
 
-    mVertexBufferObject.create();
-    mVertexBufferObject.setUsagePattern(QGLBuffer::StaticDraw);
 #endif
 
-    if (!mVertexBufferObject.bind()) {
+    if (this->mVBO[VBO::TRIANGLE] == 0) {
         std::cerr << "could not bind vertex buffer to the context." << std::endl;
         return;
     }
 
-    mVertexBufferObject.allocate(triangleData, 3 * 3 * sizeof(float));
+    glBufferData(GL_ARRAY_BUFFER, 3 * 3 * sizeof(float), triangleData, GL_STATIC_DRAW);
 
     mProgram.bind();
 
@@ -130,11 +124,13 @@ void Viewer::paintGL() {
     // Clear the screen
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 1, 0))
-    mVertexArrayObject.bind();
+    glBindVertexArray(this->mVAO);
+#else
+    typedef void (APIENTRY *_glBindVertexArray) (GLuint);
+    _glBindVertexArray glBindVertexArray;
+    glBindVertexArray(this->mVAO);
 #endif
-
 
     for (int i = 0; i < 4; i++) {
 

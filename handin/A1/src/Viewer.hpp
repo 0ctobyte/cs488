@@ -46,19 +46,19 @@ protected:
     virtual void mouseMoveEvent ( QMouseEvent * event );
 
 private:
+    enum VBO {
+      TRIANGLE,
+      CUBE,
+      MAX_VBO
+    };
 
     QMatrix4x4 getCameraMatrix();
     void translateWorld(float x, float y, float z);
     void rotateWorld(float angle, float x, float y, float z);
     void scaleWorld(float x, float y, float z);
 
-
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 1, 0))
-    QOpenGLBuffer mVertexBufferObject;
-    QOpenGLVertexArrayObject mVertexArrayObject;
-#else 
-    QGLBuffer mVertexBufferObject;
-#endif
+    GLuint mVAO;
+    GLuint mVBO[MAX_VBO]; 
 
     int mVertexLocation;
     int mMvpMatrixLocation;
