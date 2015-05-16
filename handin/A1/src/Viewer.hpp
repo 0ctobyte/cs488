@@ -13,9 +13,14 @@
 #include <QGLBuffer>
 #endif
 
+#include "game.hpp"
+
 class Viewer : public QGLWidget {
     
     Q_OBJECT
+
+public slots:
+  void resetView();
 
 public:
     Viewer(const QGLFormat& format, QWidget *parent = 0);
@@ -23,6 +28,11 @@ public:
     
     QSize minimumSizeHint() const;
     QSize sizeHint() const;
+
+    // Return a referene to the game instance
+    // AppWindow can use this when the left and right keys are pressed 
+    // to move the cubes
+    Game& game() { return mGame; }
 
     // If you want to render a new frame, call do not call paintGL(),
     // instead, call update() to ensure that the view gets a paint 
@@ -45,6 +55,9 @@ protected:
     // Called when the mouse moves
     virtual void mouseMoveEvent ( QMouseEvent * event );
 
+private slots:
+  void updateGame();
+
 private:
     enum VBO {
       TRIANGLE,
@@ -52,20 +65,32 @@ private:
       MAX_VBO
     };
 
+    // Colour map for the pieces
+    float mPieceColour[9][3];
+      
+    Game mGame;
+    QTimer*mTimerGame;
+    void drawGameBorder();
+    void drawGameBoard();
+
     QMatrix4x4 getCameraMatrix();
     void translateWorld(float x, float y, float z);
     void rotateWorld(float angle, float x, float y, float z);
     void scaleWorld(float x, float y, float z);
+
+    void drawCube(float x, float y, float z);
 
     GLuint mVAO;
     GLuint mVBO[MAX_VBO]; 
 
     int mVertexLocation;
     int mMvpMatrixLocation;
+    int mColorLocation;
 
     QMatrix4x4 mPerspMatrix;
     QMatrix4x4 mModelMatrices[4];
     QMatrix4x4 mTransformMatrix;
+    QMatrix4x4 mCubeModelMatrix;
     
     QTimer* mTimer;
     QGLShaderProgram mProgram;

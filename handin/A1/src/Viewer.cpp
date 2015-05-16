@@ -18,8 +18,19 @@
 
 Viewer::Viewer(const QGLFormat& format, QWidget *parent)
     : QGLWidget(format, parent)
+    , mGame(10, 20)
     , mVAO(0)
 {
+    mPieceColour[0][0] = 1.0f; mPieceColour[0][1] = 0.6f; mPieceColour[0][2] = 0.6f;
+    mPieceColour[1][0] = 1.0f; mPieceColour[1][1] = 0.8f; mPieceColour[1][2] = 0.6f;
+    mPieceColour[2][0] = 1.0f; mPieceColour[2][1] = 1.0f; mPieceColour[2][2] = 0.6f;
+    mPieceColour[3][0] = 0.8f; mPieceColour[3][1] = 1.0f; mPieceColour[3][2] = 0.6f;
+    mPieceColour[4][0] = 0.6f; mPieceColour[4][1] = 1.0f; mPieceColour[4][2] = 0.6f;
+    mPieceColour[5][0] = 0.6f; mPieceColour[5][1] = 1.0f; mPieceColour[5][2] = 0.8f;
+    mPieceColour[6][0] = 0.6f; mPieceColour[6][1] = 1.0f; mPieceColour[6][2] = 1.0f;
+    mPieceColour[7][0] = 0.6f; mPieceColour[7][1] = 0.8f; mPieceColour[7][2] = 1.0f;
+    mPieceColour[8][0] = 0.5f; mPieceColour[8][1] = 0.5f; mPieceColour[8][2] = 0.5f;
+
     mTimer = new QTimer(this);
     connect(mTimer, SIGNAL(timeout()), this, SLOT(update()));
     mTimer->start(1000/30);
@@ -31,6 +42,14 @@ Viewer::Viewer(const QGLFormat& format, QWidget *parent)
     mModelMatrices[2].rotate(270, QVector3D(0,0,1));
     mModelMatrices[3].translate(5,10,0);
     mModelMatrices[3].rotate(180, QVector3D(0,0,1));
+
+    mCubeModelMatrix.setToIdentity();
+
+    mGame.reset();
+
+    mTimerGame = new QTimer(this);
+    connect(mTimerGame, SIGNAL(timeout()), this, SLOT(updateGame()));
+    mTimerGame->start(1000);
 }
 
 Viewer::~Viewer() {
@@ -42,7 +61,7 @@ QSize Viewer::minimumSizeHint() const {
 }
 
 QSize Viewer::sizeHint() const {
-    return QSize(300, 600);
+    return QSize(325, 575);
 }
 
 void Viewer::initializeGL() {
@@ -76,13 +95,56 @@ void Viewer::initializeGL() {
          0.0f, 1.0f, 0.0f,
     };
 
+    float cubeData[] = {
+      // front quad
+      0.5f, 0.5f, 0.0f,
+      -0.5f, 0.5f, 0.0f,
+      -0.5f, -0.5f, 0.0f,
+      0.5f, 0.5f, 0.0f,
+      -0.5, -0.5f, 0.0f,
+      0.5f, -0.5f, 0.0f,
+      // right quad
+      0.5f, 0.5f, 0.0f,
+      0.5f, -0.5f, 0.0f,
+      0.5f, -0.5f, -1.0f,
+      0.5f, 0.5f, 0.0f,
+      0.5f, -0.5f, -1.0f,
+      0.5f, 0.5f, -1.0f,
+      // back quad
+      0.5f, -0.5, 0.0f,
+      -0.5f, -0.5f, 0.0f,
+      -0.5f, -0.5f, -1.0f,
+      0.5f, -0.5, 0.0f,
+      -0.5f, -0.5f, -1.0f,
+      0.5f, -0.5f, -1.0f,
+      // left quad
+      -0.5f, 0.5f, 0.0f,
+      -0.5f, -0.5f, 0.0f,
+      -0.5f, -0.5f, -1.0f,
+      -0.5f, 0.5f, 0.0f,
+      -0.5f, -0.5f, -1.0f,
+      -0.5f, 0.5f, -1.0f,
+      // top quad
+      0.5f, 0.5f, 0.0f,
+      -0.5f, 0.5f, 0.0f,
+      -0.5f, 0.5f, -1.0f,
+      0.5f, 0.5f, 0.0f,
+      -0.5f, 0.5f, -1.0f,
+      0.5f, 0.5f, -1.0f,
+      // bottom quad
+      0.5f, -0.5f, 0.0f,
+      -0.5f, -0.5f, 0.0f,
+      -0.5f, -0.5f, -1.0f,
+      0.5f, -0.5f, 0.0f,
+      -0.5f, -0.5f, -1.0f,
+      0.5f, -0.5f, -1.0f,
+    };
+
 
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 1, 0))
-    glGenVertexArrays(1, &this->mVAO);
-    glBindVertexArray(this->mVAO);
+    glGenVertexArrays(1, &mVAO);
+    glBindVertexArray(mVAO);
 
-    glGenBuffers(VBO::MAX_VBO, this->mVBO);
-    glBindBuffer(GL_ARRAY_BUFFER, this->mVBO[VBO::TRIANGLE]);
 #else
 
     /*
@@ -99,25 +161,35 @@ void Viewer::initializeGL() {
     glGenVertexArrays = (_glGenVertexArrays) QGLWidget::context()->getProcAddress("glGenVertexArrays");
     glBindVertexArray = (_glBindVertexArray) QGLWidget::context()->getProcAddress("glBindVertexArray");
 
-    glGenVertexArrays(1, &this->mVAO);
-    glBindVertexArray(this->mVAO);
+    glGenVertexArrays(1, &mVAO);
+    glBindVertexArray(mVAO);
 
 #endif
 
-    if (this->mVBO[VBO::TRIANGLE] == 0) {
+    glGenBuffers(VBO::MAX_VBO, mVBO);
+    glBindBuffer(GL_ARRAY_BUFFER, mVBO[VBO::TRIANGLE]);
+
+    if (mVBO[VBO::TRIANGLE] == 0) {
         std::cerr << "could not bind vertex buffer to the context." << std::endl;
         return;
     }
 
     glBufferData(GL_ARRAY_BUFFER, 3 * 3 * sizeof(float), triangleData, GL_STATIC_DRAW);
 
-    mProgram.bind();
+    glBindBuffer(GL_ARRAY_BUFFER, mVBO[VBO::CUBE]);
 
-    mProgram.enableAttributeArray("vert");
-    mProgram.setAttributeBuffer("vert", GL_FLOAT, 0, 3);
+    if(mVBO[VBO::CUBE] == 0) {
+        std::cerr << "could not bind vertex buffer to the context." << std::endl;
+        return;
+    }
+
+    glBufferData(GL_ARRAY_BUFFER, 36 * 3  * sizeof(float), cubeData, GL_STATIC_DRAW);
+
+    mProgram.bind();
 
     // mPerspMatrixLocation = mProgram.uniformLocation("cameraMatrix");
     mMvpMatrixLocation = mProgram.uniformLocation("mvpMatrix");
+    mColorLocation = mProgram.uniformLocation("frag_color");
 }
 
 void Viewer::paintGL() {
@@ -125,12 +197,18 @@ void Viewer::paintGL() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 1, 0))
-    glBindVertexArray(this->mVAO);
+    glBindVertexArray(mVAO);
 #else
     typedef void (APIENTRY *_glBindVertexArray) (GLuint);
     _glBindVertexArray glBindVertexArray;
-    glBindVertexArray(this->mVAO);
+    glBindVertexArray(mVAO);
 #endif
+
+    glBindBuffer(GL_ARRAY_BUFFER, mVBO[VBO::TRIANGLE]);
+
+    mProgram.enableAttributeArray("vert");
+    mProgram.setAttributeBuffer("vert", GL_FLOAT, 0, 3);
+    mProgram.setUniformValue(mColorLocation, 1.0f, 0.0f, 0.0f);
 
     for (int i = 0; i < 4; i++) {
 
@@ -138,6 +216,12 @@ void Viewer::paintGL() {
 
         glDrawArrays(GL_TRIANGLES, 0, 3);
     }
+
+    // Draw game well
+    drawGameBorder();
+
+    // Draw game board
+    drawGameBoard();
 }
 
 void Viewer::resizeGL(int width, int height) {
@@ -185,5 +269,64 @@ void Viewer::rotateWorld(float angle, float x, float y, float z) {
 
 void Viewer::scaleWorld(float x, float y, float z) {
     mTransformMatrix.scale(x, y, z);
+}
+
+void Viewer::resetView() {
+  mTransformMatrix.setToIdentity();
+}
+
+void Viewer::drawCube(float x, float y, float z) {
+  glBindBuffer(GL_ARRAY_BUFFER, mVBO[VBO::CUBE]);
+
+  mProgram.enableAttributeArray("vert");
+  mProgram.setAttributeBuffer("vert", GL_FLOAT, 0, 3);
+
+  mCubeModelMatrix.setToIdentity();
+  mCubeModelMatrix.translate(x, y, z);
+  mProgram.setUniformValue(mMvpMatrixLocation, getCameraMatrix() * mCubeModelMatrix);
+  
+  glDrawArrays(GL_TRIANGLES, 0, 36);
+}
+
+void Viewer::drawGameBorder() {
+  mProgram.setUniformValue(mColorLocation, mPieceColour[8][0], mPieceColour[8][1], mPieceColour[8][2]);
+
+  // Draw left side of well
+  for(float x = -5.5f, y = 9.5f; y >= -10.5f; y -= 1.0f) {
+    drawCube(x, y, 0.0f);
+  }
+
+  // Draw bottom of well
+  for(float x = -4.5f, y = -10.5f; x <= 5.5f; x += 1.0f) {
+    drawCube(x, y, 0.0f);
+  }
+
+  // Draw the right side of the well
+  for(float x = 5.5f, y = -9.5f; y <= 9.5f; y += 1.0f) {
+    drawCube(x, y, 0.0f);
+  }
+}
+
+void Viewer::drawGameBoard() {
+  int width = mGame.getWidth();
+  int height = mGame.getHeight() + 4;
+
+  for(int r = 0; r < height; r++) {
+    for(int c = 0; c < width; c++) {
+      int type = mGame.get(r, c);
+      if(type >= 0) {
+        mProgram.setUniformValue(mColorLocation, mPieceColour[type][0], mPieceColour[type][1], mPieceColour[type][2]);
+        drawCube((float)c-(float)width/2.0f+0.5f, (float)r-(float)height/2.0f+0.5f, 0.0f);
+      }
+    }
+  }
+}
+
+void Viewer::updateGame() {
+  int r = mGame.tick();
+  if(r < 0) {
+    // Game over
+    mGame.reset();
+  }
 }
 
