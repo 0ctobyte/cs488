@@ -171,6 +171,7 @@ void AppWindow::createMenu() {
 }
 
 void AppWindow::newGame() {
+  m_viewer->resetView();
   m_viewer->game().reset();
 }
 
