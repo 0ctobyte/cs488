@@ -157,6 +157,7 @@ Game::Game(int width, int height)
   , board_height_(height)
   , stopped_(false)
 {
+  srand(time(NULL));
   int sz = board_width_ * (board_height_+4);
 
   board_ = new int[ sz ];
@@ -166,6 +167,7 @@ Game::Game(int width, int height)
 
 void Game::reset()
 {
+  srand(time(NULL));
   stopped_ = false;
   std::fill(board_, board_ + (board_width_*(board_height_+4)), -1);
   generateNewPiece();
