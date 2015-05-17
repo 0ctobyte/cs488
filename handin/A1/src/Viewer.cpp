@@ -1,16 +1,9 @@
-// #include <GL/glew.h>
 #include <QtWidgets>
 #include <QtOpenGL>
 #include <QVector3D>
 #include "Viewer.hpp"
 #include <iostream>
 #include <math.h>
-// #include <GL/gl.h>
-#ifdef __APPLE__
-  #include <OpenGL/glu.h>
-#else
-  #include <GL/glu.h>
-#endif
 
 #ifndef GL_MULTISAMPLE
 #define GL_MULTISAMPLE 0x809D
@@ -32,14 +25,6 @@ Viewer::Viewer(const QGLFormat& format, QWidget *parent)
     connect(mTimer, SIGNAL(timeout()), this, SLOT(update()));
     mTimer->start(1000/30);
 
-    mModelMatrices[0].translate(-5,-10,0);
-    mModelMatrices[1].translate(5,-10,0);
-    mModelMatrices[1].rotate(90, QVector3D(0,0,1));
-    mModelMatrices[2].translate(-5,10,0);
-    mModelMatrices[2].rotate(270, QVector3D(0,0,1));
-    mModelMatrices[3].translate(5,10,0);
-    mModelMatrices[3].rotate(180, QVector3D(0,0,1));
-
     mCubeModelMatrix.setToIdentity();
 
     mGame.reset();
@@ -58,6 +43,7 @@ QSize Viewer::minimumSizeHint() const {
 }
 
 QSize Viewer::sizeHint() const {
+    // Changed the size hint to be slightly larger
     return QSize(325, 575);
 }
 
@@ -128,6 +114,8 @@ void Viewer::initializeGL() {
       0.5f, -0.5f, 0.0f,
     };
 
+    // Enabled depth testing in order to overwrite back faces instead of blending them in
+    // Makes everything look more 3D
     glClearColor(0.7, 0.7, 1.0, 0.0);
     glClearDepth(1.0f);
     glEnable(GL_DEPTH_TEST);
@@ -148,6 +136,7 @@ void Viewer::initializeGL() {
     typedef void (APIENTRY *_glGenVertexArrays) (GLsizei, GLuint*);
     typedef void (APIENTRY *_glBindVertexArray) (GLuint);
 
+    // Have to get the function pointers for these functions as well -_-
     typedef void (APIENTRY *_glGenBuffers) (GLsizei, GLuint*);
     typedef void (APIENTRY *_glBindBuffer) (GLenum, GLuint);
     typedef void (APIENTRY *_glBufferData) (GLenum, GLsizeiptr, const GLvoid*, GLenum);
@@ -180,6 +169,7 @@ void Viewer::initializeGL() {
         return;
     }
 
+    // Copy the data into the GPU
     glBufferData(GL_ARRAY_BUFFER, 36 * 3  * sizeof(float), cubeData, GL_STATIC_DRAW);
 
     mProgram.bind();
@@ -193,7 +183,7 @@ void Viewer::initializeGL() {
 }
 
 void Viewer::paintGL() {
-    // Reset 
+    // Reset this every update
     mMouseMoving = false;
     
     // If persistence is enabled, keep rotating the board
@@ -201,7 +191,7 @@ void Viewer::paintGL() {
       rotateWorld(mRotAngle, mRotAxis.x(), mRotAxis.y(), mRotAxis.z());
     }
 
-    // Clear the screen
+    // Clear the screen and depth buffer
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 1, 0))
@@ -232,9 +222,11 @@ void Viewer::resizeGL(int width, int height) {
 }
 
 void Viewer::mousePressEvent ( QMouseEvent * event ) {
+    // Reset persistence whenever a mouse button is pressed
     mMouseMoving = false;
     mPersistence = false;
     mRotAngle = 0.0f;
+
     mMouseCoord.setX(event->x());
     mMouseCoord.setY(event->y());
 }
@@ -249,24 +241,35 @@ void Viewer::mouseMoveEvent ( QMouseEvent * event ) {
     float s = (event->x()-mMouseCoord.x());
     mRotAngle = s;
     mMouseMoving = true;
-   
+
     if((event->modifiers() & Qt::ShiftModifier) && s != 0) {
       s = 1.0f + s/100.0f;
       mScale *= s;
+
+      // Check if scale is within the valid range
       if(mScale >= 0.20f && mScale <= 1.20f) scaleWorld(s, s, s);
       else mScale /= s;
+
+      // We don't want to trigger persistence rotation when the shift key is pressed
       mMouseMoving = false;
-    } else if(event->buttons() & Qt::LeftButton) {
-      mRotAxis = QVector3D(1.0f, 0.0f, 0.0f);
-      rotateWorld(s, 1.0f, 0.0f, 0.0f);
-    } else if(event->buttons() & Qt::MiddleButton) {
-      mRotAxis = QVector3D(0.0f, 1.0f, 0.0f);
-      rotateWorld(s, 0.0f, 1.0f, 0.0f);
-    } else if(event->buttons() & Qt::RightButton) {
-      mRotAxis = QVector3D(0.0f, 0.0f, 1.0f);
-      rotateWorld(s, 0.0f, 0.0f, 1.0f);
+    } else {
+      // Allow for rotations around multiple axes simultaneously!
+      mRotAxis = QVector3D(0.0f, 0.0f, 0.0f);
+      if(event->buttons() & Qt::LeftButton) {
+        mRotAxis += QVector3D(1.0f, 0.0f, 0.0f);
+        rotateWorld(s, 1.0f, 0.0f, 0.0f);
+      }
+      if(event->buttons() & Qt::MidButton) {
+        mRotAxis += QVector3D(0.0f, 1.0f, 0.0f);
+        rotateWorld(s, 0.0f, 1.0f, 0.0f);
+      }
+      if(event->buttons() & Qt::RightButton) {
+        mRotAxis += QVector3D(0.0f, 0.0f, 1.0f);
+        rotateWorld(s, 0.0f, 0.0f, 1.0f);
+      }
     }
 
+    // Update the mouse coord in order calculate the delta next time this event is triggered
     mMouseCoord.setX(event->x());
     mMouseCoord.setY(event->y());
 
@@ -395,6 +398,7 @@ void Viewer::updateGame() {
   int r = mGame.tick();
 
   if(r < 0) {
+    // Rotate the board when game is lost
     mPersistence = true;
     mRotAngle = 5.0f;
     mRotAxis = QVector3D(1.0f, 0.0f, 0.0f);

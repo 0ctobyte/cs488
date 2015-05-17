@@ -20,6 +20,7 @@ class Viewer : public QGLWidget {
     Q_OBJECT
 
 public slots:
+  // This is called when the R button is pressed
   void resetView();
 
 public:
@@ -46,6 +47,7 @@ public:
       FAST
     };
 
+    // These functions change the draw mode and speed of gameplay respectively
     void drawMode(DrawMode mode);
     void speedMode(SpeedMode mode);
 
@@ -71,6 +73,7 @@ protected:
     virtual void mouseMoveEvent ( QMouseEvent * event );
 
 private slots:
+  // Called on a timer to update the game logic
   void updateGame();
 
 private:
@@ -82,8 +85,11 @@ private:
     // Cubes will have different colours for each face if this is true
     bool mMultiColCube;
       
+    // Instance of the game and timer to update game logic
     Game mGame;
     QTimer *mTimerGame;
+
+    // These functions draw the game content
     void drawGameBorder();
     void drawGameBoard();
 
@@ -92,8 +98,10 @@ private:
     void rotateWorld(float angle, float x, float y, float z);
     void scaleWorld(float x, float y, float z);
 
+    // Draws a unit cube translated to the specified coordinates
     void drawCube(float x, float y, float z);
 
+    // Vertex array and buffer objects
     GLuint mVAO;
     GLuint mVBO[MAX_VBO]; 
 
@@ -102,13 +110,13 @@ private:
     int mColorLocation;
 
     QMatrix4x4 mPerspMatrix;
-    QMatrix4x4 mModelMatrices[4];
     QMatrix4x4 mTransformMatrix;
     QMatrix4x4 mCubeModelMatrix;
     
     QTimer* mTimer;
     QGLShaderProgram mProgram;
 
+    // These vars are used to keep track of the state of rendering
     QPoint mMouseCoord;
     float mScale;
     QVector3D mRotAxis;
