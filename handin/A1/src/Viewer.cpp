@@ -18,19 +18,12 @@
 
 Viewer::Viewer(const QGLFormat& format, QWidget *parent)
     : QGLWidget(format, parent)
+    , mMultiColCube(false)
     , mGame(10, 20)
     , mVAO(0)
+    , mMouseCoord(0, 0)
+    , mScale(1.0f)
 {
-    mPieceColour[0][0] = 1.0f; mPieceColour[0][1] = 0.6f; mPieceColour[0][2] = 0.6f;
-    mPieceColour[1][0] = 1.0f; mPieceColour[1][1] = 0.8f; mPieceColour[1][2] = 0.6f;
-    mPieceColour[2][0] = 1.0f; mPieceColour[2][1] = 1.0f; mPieceColour[2][2] = 0.6f;
-    mPieceColour[3][0] = 0.8f; mPieceColour[3][1] = 1.0f; mPieceColour[3][2] = 0.6f;
-    mPieceColour[4][0] = 0.6f; mPieceColour[4][1] = 1.0f; mPieceColour[4][2] = 0.6f;
-    mPieceColour[5][0] = 0.6f; mPieceColour[5][1] = 1.0f; mPieceColour[5][2] = 0.8f;
-    mPieceColour[6][0] = 0.6f; mPieceColour[6][1] = 1.0f; mPieceColour[6][2] = 1.0f;
-    mPieceColour[7][0] = 0.6f; mPieceColour[7][1] = 0.8f; mPieceColour[7][2] = 1.0f;
-    mPieceColour[8][0] = 0.5f; mPieceColour[8][1] = 0.5f; mPieceColour[8][2] = 0.5f;
-
     mTimer = new QTimer(this);
     connect(mTimer, SIGNAL(timeout()), this, SLOT(update()));
     mTimer->start(1000/30);
@@ -72,6 +65,10 @@ void Viewer::initializeGL() {
     }
 
     glClearColor(0.7, 0.7, 1.0, 0.0);
+    glClearDepth(1.0f);
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LEQUAL);
+    glDepthRange(0.0f, 1.0f);
 
     if (!mProgram.addShaderFromSourceFile(QGLShader::Vertex, "shader.vert")) {
         std::cerr << "Cannot load vertex shader." << std::endl;
@@ -96,34 +93,13 @@ void Viewer::initializeGL() {
     };
 
     float cubeData[] = {
-      // front quad
-      0.5f, 0.5f, 0.0f,
-      -0.5f, 0.5f, 0.0f,
-      -0.5f, -0.5f, 0.0f,
-      0.5f, 0.5f, 0.0f,
-      -0.5, -0.5f, 0.0f,
-      0.5f, -0.5f, 0.0f,
-      // right quad
-      0.5f, 0.5f, 0.0f,
-      0.5f, -0.5f, 0.0f,
-      0.5f, -0.5f, -1.0f,
-      0.5f, 0.5f, 0.0f,
-      0.5f, -0.5f, -1.0f,
-      0.5f, 0.5f, -1.0f,
       // back quad
-      0.5f, -0.5, 0.0f,
-      -0.5f, -0.5f, 0.0f,
-      -0.5f, -0.5f, -1.0f,
-      0.5f, -0.5, 0.0f,
-      -0.5f, -0.5f, -1.0f,
-      0.5f, -0.5f, -1.0f,
-      // left quad
-      -0.5f, 0.5f, 0.0f,
-      -0.5f, -0.5f, 0.0f,
-      -0.5f, -0.5f, -1.0f,
-      -0.5f, 0.5f, 0.0f,
-      -0.5f, -0.5f, -1.0f,
+      0.5f, 0.5f, -1.0f,
       -0.5f, 0.5f, -1.0f,
+      -0.5f, -0.5f, -1.0f,
+      0.5f, 0.5f, -1.0f,
+      -0.5, -0.5f, -1.0f,
+      0.5f, -0.5f, -1.0f,
       // top quad
       0.5f, 0.5f, 0.0f,
       -0.5f, 0.5f, 0.0f,
@@ -138,6 +114,27 @@ void Viewer::initializeGL() {
       0.5f, -0.5f, 0.0f,
       -0.5f, -0.5f, -1.0f,
       0.5f, -0.5f, -1.0f,
+      // right quad
+      0.5f, 0.5f, 0.0f,
+      0.5f, -0.5f, 0.0f,
+      0.5f, -0.5f, -1.0f,
+      0.5f, 0.5f, 0.0f,
+      0.5f, -0.5f, -1.0f,
+      0.5f, 0.5f, -1.0f,
+      // left quad
+      -0.5f, 0.5f, 0.0f,
+      -0.5f, -0.5f, 0.0f,
+      -0.5f, -0.5f, -1.0f,
+      -0.5f, 0.5f, 0.0f,
+      -0.5f, -0.5f, -1.0f,
+      -0.5f, 0.5f, -1.0f,
+      // front quad
+      0.5f, 0.5f, 0.0f,
+      -0.5f, 0.5f, 0.0f,
+      -0.5f, -0.5f, 0.0f,
+      0.5f, 0.5f, 0.0f,
+      -0.5, -0.5f, 0.0f,
+      0.5f, -0.5f, 0.0f,
     };
 
 
@@ -189,7 +186,7 @@ void Viewer::initializeGL() {
 
     // mPerspMatrixLocation = mProgram.uniformLocation("cameraMatrix");
     mMvpMatrixLocation = mProgram.uniformLocation("mvpMatrix");
-    mColorLocation = mProgram.uniformLocation("frag_color");
+    mColorLocation = mProgram.uniformLocation("cindex");
 }
 
 void Viewer::paintGL() {
@@ -208,7 +205,7 @@ void Viewer::paintGL() {
 
     mProgram.enableAttributeArray("vert");
     mProgram.setAttributeBuffer("vert", GL_FLOAT, 0, 3);
-    mProgram.setUniformValue(mColorLocation, 1.0f, 0.0f, 0.0f);
+    mProgram.setUniformValue(mColorLocation, 9);
 
     for (int i = 0; i < 4; i++) {
 
@@ -237,6 +234,10 @@ void Viewer::resizeGL(int width, int height) {
 
 void Viewer::mousePressEvent ( QMouseEvent * event ) {
     std::cerr << "Stub: button " << event->button() << " pressed\n";
+    std::cerr << "Stub: Press at " << event->x() << ", " << event->y() << std::endl;
+
+    mMouseCoord.setX(event->x());
+    mMouseCoord.setY(event->y());
 }
 
 void Viewer::mouseReleaseEvent ( QMouseEvent * event ) {
@@ -245,6 +246,24 @@ void Viewer::mouseReleaseEvent ( QMouseEvent * event ) {
 
 void Viewer::mouseMoveEvent ( QMouseEvent * event ) {
     std::cerr << "Stub: Motion at " << event->x() << ", " << event->y() << std::endl;
+    
+    float s = (event->x()-mMouseCoord.x());
+    
+    if((event->modifiers() & Qt::ShiftModifier) && s != 0) {
+      s = 1.0f + s/100.0f;
+      mScale *= s;
+      if(mScale >= 0.20f && mScale <= 1.20f) scaleWorld(s, s, s);
+      else mScale /= s;
+    } else if(event->buttons() & Qt::LeftButton) {
+      rotateWorld(s, 1.0f, 0.0f, 0.0f);
+    } else if(event->buttons() & Qt::MiddleButton) {
+      rotateWorld(s, 0.0f, 1.0f, 0.0f);
+    } else if(event->buttons() & Qt::RightButton) {
+      rotateWorld(s, 0.0f, 0.0f, 1.0f);
+    }
+
+    mMouseCoord.setX(event->x());
+    mMouseCoord.setY(event->y());
 }
 
 QMatrix4x4 Viewer::getCameraMatrix() {
@@ -275,21 +294,62 @@ void Viewer::resetView() {
   mTransformMatrix.setToIdentity();
 }
 
+void Viewer::drawMode(DrawMode mode) {
+  switch(mode) {
+  case WIREFRAME:
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    break;
+  case MULTICOLOURED:
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    mMultiColCube = true;
+    break;
+  case FACE:
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    mMultiColCube = false;
+    break;
+  }
+}
+
+void Viewer::speedMode(SpeedMode mode) {
+  switch(mode) {
+  case SLOW:
+    mTimerGame->start(1000/2);
+    break;
+  case MEDIUM:
+    mTimerGame->start(1000/4);
+    break;
+  case FAST:
+    mTimerGame->start(1000/8);
+    break;
+  }
+}
+
 void Viewer::drawCube(float x, float y, float z) {
   glBindBuffer(GL_ARRAY_BUFFER, mVBO[VBO::CUBE]);
 
   mProgram.enableAttributeArray("vert");
   mProgram.setAttributeBuffer("vert", GL_FLOAT, 0, 3);
-
+  
   mCubeModelMatrix.setToIdentity();
   mCubeModelMatrix.translate(x, y, z);
   mProgram.setUniformValue(mMvpMatrixLocation, getCameraMatrix() * mCubeModelMatrix);
-  
-  glDrawArrays(GL_TRIANGLES, 0, 36);
+
+  if(mMultiColCube) {
+    for(int i = 0; i < 6; i++) {
+      mProgram.setUniformValue(mColorLocation, i);
+      glDrawArrays(GL_TRIANGLES, i*6,  6);
+    }
+  } else {
+    glDrawArrays(GL_TRIANGLES, 0, 36);
+  }
 }
 
 void Viewer::drawGameBorder() {
-  mProgram.setUniformValue(mColorLocation, mPieceColour[8][0], mPieceColour[8][1], mPieceColour[8][2]);
+  mProgram.setUniformValue(mColorLocation, 8);
+
+  // Temporarily disable multicoloured cubes when drawing the border
+  bool multiColCube = mMultiColCube;
+  mMultiColCube = false;
 
   // Draw left side of well
   for(float x = -5.5f, y = 9.5f; y >= -10.5f; y -= 1.0f) {
@@ -305,6 +365,8 @@ void Viewer::drawGameBorder() {
   for(float x = 5.5f, y = -9.5f; y <= 9.5f; y += 1.0f) {
     drawCube(x, y, 0.0f);
   }
+
+  mMultiColCube = multiColCube;
 }
 
 void Viewer::drawGameBoard() {
@@ -315,18 +377,14 @@ void Viewer::drawGameBoard() {
     for(int c = 0; c < width; c++) {
       int type = mGame.get(r, c);
       if(type >= 0) {
-        mProgram.setUniformValue(mColorLocation, mPieceColour[type][0], mPieceColour[type][1], mPieceColour[type][2]);
-        drawCube((float)c-(float)width/2.0f+0.5f, (float)r-(float)height/2.0f+0.5f, 0.0f);
+        mProgram.setUniformValue(mColorLocation, type);
+        drawCube((float)c-(float)width/2.0f+0.5f, (float)r-(float)(height-4)/2.0f+0.5f, 0.0f);
       }
     }
   }
 }
 
 void Viewer::updateGame() {
-  int r = mGame.tick();
-  if(r < 0) {
-    // Game over
-    mGame.reset();
-  }
+  mGame.tick();
 }
 

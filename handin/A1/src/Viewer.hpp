@@ -34,6 +34,21 @@ public:
     // to move the cubes
     Game& game() { return mGame; }
 
+    enum DrawMode {
+      WIREFRAME,
+      FACE,
+      MULTICOLOURED
+    };
+
+    enum SpeedMode {
+      SLOW,
+      MEDIUM,
+      FAST
+    };
+
+    void drawMode(DrawMode mode);
+    void speedMode(SpeedMode mode);
+
     // If you want to render a new frame, call do not call paintGL(),
     // instead, call update() to ensure that the view gets a paint 
     // event.
@@ -65,8 +80,8 @@ private:
       MAX_VBO
     };
 
-    // Colour map for the pieces
-    float mPieceColour[9][3];
+    // Cubes will have different colours for each face if this is true
+    bool mMultiColCube;
       
     Game mGame;
     QTimer*mTimerGame;
@@ -94,6 +109,9 @@ private:
     
     QTimer* mTimer;
     QGLShaderProgram mProgram;
+
+    QPoint mMouseCoord;
+    float mScale;
 };
 
 #endif
