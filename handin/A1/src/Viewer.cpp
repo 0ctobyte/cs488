@@ -23,6 +23,10 @@ Viewer::Viewer(const QGLFormat& format, QWidget *parent)
     , mVAO(0)
     , mMouseCoord(0, 0)
     , mScale(1.0f)
+    , mRotAxis(0.0f, 0.0f, 0.0f)
+    , mRotAngle(0.0f)
+    , mPersistence(false)
+    , mMouseMoving(false)
 {
     mTimer = new QTimer(this);
     connect(mTimer, SIGNAL(timeout()), this, SLOT(update()));
@@ -190,6 +194,14 @@ void Viewer::initializeGL() {
 }
 
 void Viewer::paintGL() {
+    // Reset 
+    mMouseMoving = false;
+    
+    // If persistence is enabled, keep rotating the board
+    if(mPersistence) {
+      rotateWorld(mRotAngle, mRotAxis.x(), mRotAxis.y(), mRotAxis.z());
+    }
+
     // Clear the screen
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -233,37 +245,45 @@ void Viewer::resizeGL(int width, int height) {
 }
 
 void Viewer::mousePressEvent ( QMouseEvent * event ) {
-    std::cerr << "Stub: button " << event->button() << " pressed\n";
-    std::cerr << "Stub: Press at " << event->x() << ", " << event->y() << std::endl;
-
+    mMouseMoving = false;
+    mPersistence = false;
+    mRotAngle = 0.0f;
     mMouseCoord.setX(event->x());
     mMouseCoord.setY(event->y());
 }
 
 void Viewer::mouseReleaseEvent ( QMouseEvent * event ) {
-    std::cerr << "Stub: button " << event->button() << " released\n";
+    if(mMouseMoving && !(event->modifiers() & Qt::ShiftModifier)) {
+      std::cerr << "Persistence" << std::endl;
+      mPersistence = true;
+    }
 }
 
 void Viewer::mouseMoveEvent ( QMouseEvent * event ) {
-    std::cerr << "Stub: Motion at " << event->x() << ", " << event->y() << std::endl;
-    
     float s = (event->x()-mMouseCoord.x());
-    
+    mRotAngle = s;
+    mMouseMoving = true;
+   
     if((event->modifiers() & Qt::ShiftModifier) && s != 0) {
       s = 1.0f + s/100.0f;
       mScale *= s;
       if(mScale >= 0.20f && mScale <= 1.20f) scaleWorld(s, s, s);
       else mScale /= s;
+      mMouseMoving = false;
     } else if(event->buttons() & Qt::LeftButton) {
+      mRotAxis = QVector3D(1.0f, 0.0f, 0.0f);
       rotateWorld(s, 1.0f, 0.0f, 0.0f);
     } else if(event->buttons() & Qt::MiddleButton) {
+      mRotAxis = QVector3D(0.0f, 1.0f, 0.0f);
       rotateWorld(s, 0.0f, 1.0f, 0.0f);
     } else if(event->buttons() & Qt::RightButton) {
+      mRotAxis = QVector3D(0.0f, 0.0f, 1.0f);
       rotateWorld(s, 0.0f, 0.0f, 1.0f);
     }
 
     mMouseCoord.setX(event->x());
     mMouseCoord.setY(event->y());
+
 }
 
 QMatrix4x4 Viewer::getCameraMatrix() {
@@ -291,6 +311,12 @@ void Viewer::scaleWorld(float x, float y, float z) {
 }
 
 void Viewer::resetView() {
+  mMouseCoord.setX(0.0f); mMouseCoord.setY(0.0f);
+  mScale = 1.0f;
+  mRotAxis.setX(0.0f); mRotAxis.setY(0.0f); mRotAxis.setZ(0.0f);
+  mRotAngle = 0.0f;
+  mPersistence = false;
+  mMouseMoving = false;
   mTransformMatrix.setToIdentity();
 }
 

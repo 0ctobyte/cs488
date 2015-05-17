@@ -112,6 +112,10 @@ private:
 
     QPoint mMouseCoord;
     float mScale;
+    QVector3D mRotAxis;
+    float mRotAngle;
+    bool mPersistence;
+    bool mMouseMoving;
 };
 
 #endif
