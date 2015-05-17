@@ -254,7 +254,6 @@ void Viewer::mousePressEvent ( QMouseEvent * event ) {
 
 void Viewer::mouseReleaseEvent ( QMouseEvent * event ) {
     if(mMouseMoving && !(event->modifiers() & Qt::ShiftModifier)) {
-      std::cerr << "Persistence" << std::endl;
       mPersistence = true;
     }
 }

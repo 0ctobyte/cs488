@@ -52,7 +52,12 @@ static const Piece PIECES[] = {
         "...."
         ".xx."
         ".xx."
-        "....", 6,			1,1,1,1)
+        "....", 6,			1,1,1,1),
+  Piece(
+        "...."
+        ".x.."
+        "...."
+        "....", 7,      1, 1, 2, 2)
 };
 
 Piece::Piece(const char *desc, int cindex, 
@@ -282,7 +287,7 @@ void Game::placePiece(const Piece& p, int x, int y)
 	
 void Game::generateNewPiece() 
 {
-  piece_ = PIECES[ rand() % 7 ];
+  piece_ = PIECES[ rand() % 8 ];
 
   int xleft = (board_width_-3) / 2;
 
