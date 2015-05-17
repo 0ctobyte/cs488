@@ -148,11 +148,23 @@ void Viewer::initializeGL() {
     typedef void (APIENTRY *_glGenVertexArrays) (GLsizei, GLuint*);
     typedef void (APIENTRY *_glBindVertexArray) (GLuint);
 
+    typedef void (APIENTRY *_glGenBuffers) (GLsizei, GLuint*);
+    typedef void (APIENTRY *_glBindBuffer) (GLenum, GLuint);
+    typedef void (APIENTRY *_glBufferData) (GLenum, GLsizeiptr, const GLvoid*, GLenum);
+
     _glGenVertexArrays glGenVertexArrays;
     _glBindVertexArray glBindVertexArray;
+    
+    _glGenBuffers glGenBuffers;
+    _glBindBuffer glBindBuffer;
+    _glBufferData glBufferData;
 
     glGenVertexArrays = (_glGenVertexArrays) QGLWidget::context()->getProcAddress("glGenVertexArrays");
     glBindVertexArray = (_glBindVertexArray) QGLWidget::context()->getProcAddress("glBindVertexArray");
+
+    glGenBuffers = (_glGenBuffers) QGLWidget::context()->getProcAddress("glGenBuffers");
+    glBindBuffer = (_glBindBuffer) QGLWidget::context()->getProcAddress("glBindBuffer");
+    glBufferData = (_glBufferData) QGLWidget::context()->getProcAddress("glBufferData");
 
     glGenVertexArrays(1, &mVAO);
     glBindVertexArray(mVAO);
@@ -197,6 +209,7 @@ void Viewer::paintGL() {
 #else
     typedef void (APIENTRY *_glBindVertexArray) (GLuint);
     _glBindVertexArray glBindVertexArray;
+    glBindVertexArray = (_glBindVertexArray) QGLWidget::context()->getProcAddress("glBindVertexArray");
     glBindVertexArray(mVAO);
 #endif
 
