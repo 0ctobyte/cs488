@@ -40,14 +40,16 @@ void AppWindow::keyPressEvent(QKeyEvent *event) {
       newGame();
       break;
     case Qt::Key_W:
-      // TODO: uppercase?
       wireFrameModeAct->toggle();
+      setDrawMode(wireFrameModeAct);
       break;
     case Qt::Key_F:
       faceModeAct->toggle();
+      setDrawMode(faceModeAct);
       break;
     case Qt::Key_M:
       multiColModeAct->toggle();
+      setDrawMode(multiColModeAct);
       break;
     case Qt::Key_Left:
       m_viewer->game().moveLeft();

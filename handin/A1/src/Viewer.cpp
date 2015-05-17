@@ -260,6 +260,16 @@ void Viewer::mouseMoveEvent ( QMouseEvent * event ) {
         rotateWorld(s, 1.0f, 0.0f, 0.0f);
       }
       if(event->buttons() & Qt::MidButton) {
+#ifdef __APPLE__
+        // There is some sort of bug with the middle button on Mac OS X systems
+        // For some reason, right before releasing the middle mouse button, the event
+        // reports that mouse has moved either -1 or 0 pixels ALWAYS.
+        // This correction is needed to allow persistence rotation to work properly
+        // when using the middle mouse button
+        mRotAngleMB[1] = mRotAngleMB[0];
+        mRotAngleMB[0] = mRotAngle;
+        mRotAngle = mRotAngleMB[1];
+#endif
         mRotAxis += QVector3D(0.0f, 1.0f, 0.0f);
         rotateWorld(s, 0.0f, 1.0f, 0.0f);
       }

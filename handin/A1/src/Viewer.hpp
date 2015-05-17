@@ -123,6 +123,11 @@ private:
     float mRotAngle;
     bool mPersistence;
     bool mMouseMoving;
+
+#ifdef __APPLE__
+    // This is needed to correct middle mouse persistence rotation
+    float mRotAngleMB[2];
+#endif
 };
 
 #endif
