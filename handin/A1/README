@@ -15,5 +15,5 @@ I have created the following data files, which are in the data directory:
 
 
 My program assumes the following: 
-For multicoloured mode, faces have different randomized colours for each face
+For multicoloured mode, cubes look the same since each face of a cube is statically assigned a colour.
 
