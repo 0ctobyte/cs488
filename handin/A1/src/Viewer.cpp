@@ -6,7 +6,7 @@
 #include <iostream>
 #include <math.h>
 // #include <GL/gl.h>
-#ifndef _APPLE_
+#ifdef __APPLE__
   #include <OpenGL/glu.h>
 #else
   #include <GL/glu.h>
@@ -68,12 +68,6 @@ void Viewer::initializeGL() {
         return;
     }
 
-    glClearColor(0.7, 0.7, 1.0, 0.0);
-    glClearDepth(1.0f);
-    glEnable(GL_DEPTH_TEST);
-    glDepthFunc(GL_LEQUAL);
-    glDepthRange(0.0f, 1.0f);
-
     if (!mProgram.addShaderFromSourceFile(QGLShader::Vertex, "shader.vert")) {
         std::cerr << "Cannot load vertex shader." << std::endl;
         return;
@@ -88,13 +82,6 @@ void Viewer::initializeGL() {
         std::cerr << "Cannot link shaders." << std::endl;
         return;
     }
-
-    float triangleData[] = {
-        //  X     Y     Z
-         0.0f, 0.0f, 0.0f,
-         1.0f, 0.0f, 0.0f,
-         0.0f, 1.0f, 0.0f,
-    };
 
     float cubeData[] = {
       // back quad
@@ -141,6 +128,11 @@ void Viewer::initializeGL() {
       0.5f, -0.5f, 0.0f,
     };
 
+    glClearColor(0.7, 0.7, 1.0, 0.0);
+    glClearDepth(1.0f);
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LEQUAL);
+    glDepthRange(0.0f, 1.0f);
 
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 1, 0))
     glGenVertexArrays(1, &mVAO);
@@ -168,14 +160,6 @@ void Viewer::initializeGL() {
 #endif
 
     glGenBuffers(VBO::MAX_VBO, mVBO);
-    glBindBuffer(GL_ARRAY_BUFFER, mVBO[VBO::TRIANGLE]);
-
-    if (mVBO[VBO::TRIANGLE] == 0) {
-        std::cerr << "could not bind vertex buffer to the context." << std::endl;
-        return;
-    }
-
-    glBufferData(GL_ARRAY_BUFFER, 3 * 3 * sizeof(float), triangleData, GL_STATIC_DRAW);
 
     glBindBuffer(GL_ARRAY_BUFFER, mVBO[VBO::CUBE]);
 
@@ -187,6 +171,9 @@ void Viewer::initializeGL() {
     glBufferData(GL_ARRAY_BUFFER, 36 * 3  * sizeof(float), cubeData, GL_STATIC_DRAW);
 
     mProgram.bind();
+
+    mProgram.enableAttributeArray("vert");
+    mProgram.setAttributeBuffer("vert", GL_FLOAT, 0, 3);
 
     // mPerspMatrixLocation = mProgram.uniformLocation("cameraMatrix");
     mMvpMatrixLocation = mProgram.uniformLocation("mvpMatrix");
@@ -212,19 +199,6 @@ void Viewer::paintGL() {
     _glBindVertexArray glBindVertexArray;
     glBindVertexArray(mVAO);
 #endif
-
-    glBindBuffer(GL_ARRAY_BUFFER, mVBO[VBO::TRIANGLE]);
-
-    mProgram.enableAttributeArray("vert");
-    mProgram.setAttributeBuffer("vert", GL_FLOAT, 0, 3);
-    mProgram.setUniformValue(mColorLocation, 9);
-
-    for (int i = 0; i < 4; i++) {
-
-        mProgram.setUniformValue(mMvpMatrixLocation, getCameraMatrix() * mModelMatrices[i]);
-
-        glDrawArrays(GL_TRIANGLES, 0, 3);
-    }
 
     // Draw game well
     drawGameBorder();
@@ -350,11 +324,6 @@ void Viewer::speedMode(SpeedMode mode) {
 }
 
 void Viewer::drawCube(float x, float y, float z) {
-  glBindBuffer(GL_ARRAY_BUFFER, mVBO[VBO::CUBE]);
-
-  mProgram.enableAttributeArray("vert");
-  mProgram.setAttributeBuffer("vert", GL_FLOAT, 0, 3);
-  
   mCubeModelMatrix.setToIdentity();
   mCubeModelMatrix.translate(x, y, z);
   mProgram.setUniformValue(mMvpMatrixLocation, getCameraMatrix() * mCubeModelMatrix);

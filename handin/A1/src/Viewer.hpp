@@ -75,7 +75,6 @@ private slots:
 
 private:
     enum VBO {
-      TRIANGLE,
       CUBE,
       MAX_VBO
     };
@@ -84,7 +83,7 @@ private:
     bool mMultiColCube;
       
     Game mGame;
-    QTimer*mTimerGame;
+    QTimer *mTimerGame;
     void drawGameBorder();
     void drawGameBoard();
 
