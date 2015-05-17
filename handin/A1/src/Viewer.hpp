@@ -119,8 +119,7 @@ private:
     // These vars are used to keep track of the state of rendering
     QPoint mMouseCoord;
     float mScale;
-    QVector3D mRotAxis;
-    float mRotAngle;
+    QVector3D mRotAngle;
     bool mPersistence;
     bool mMouseMoving;
 

@@ -16,8 +16,7 @@ Viewer::Viewer(const QGLFormat& format, QWidget *parent)
     , mVAO(0)
     , mMouseCoord(0, 0)
     , mScale(1.0f)
-    , mRotAxis(0.0f, 0.0f, 0.0f)
-    , mRotAngle(0.0f)
+    , mRotAngle(0.0f, 0.0f, 0.0f)
     , mPersistence(false)
     , mMouseMoving(false)
 {
@@ -188,7 +187,9 @@ void Viewer::paintGL() {
     
     // If persistence is enabled, keep rotating the board
     if(mPersistence) {
-      rotateWorld(mRotAngle, mRotAxis.x(), mRotAxis.y(), mRotAxis.z());
+      rotateWorld(mRotAngle.x(), 1.0f, 0.0f, 0.0f);
+      rotateWorld(mRotAngle.y(), 0.0f, 1.0f, 0.0f);
+      rotateWorld(mRotAngle.z(), 0.0f, 0.0f, 1.0f);
     }
 
     // Clear the screen and depth buffer
@@ -225,7 +226,7 @@ void Viewer::mousePressEvent ( QMouseEvent * event ) {
     // Reset persistence whenever a mouse button is pressed
     mMouseMoving = false;
     mPersistence = false;
-    mRotAngle = 0.0f;
+    mRotAngle = QVector3D(0.0f, 0.0f, 0.0f);
 
     mMouseCoord.setX(event->x());
     mMouseCoord.setY(event->y());
@@ -239,7 +240,6 @@ void Viewer::mouseReleaseEvent ( QMouseEvent * event ) {
 
 void Viewer::mouseMoveEvent ( QMouseEvent * event ) {
     float s = (event->x()-mMouseCoord.x());
-    mRotAngle = s;
     mMouseMoving = true;
 
     if((event->modifiers() & Qt::ShiftModifier) && s != 0) {
@@ -253,13 +253,12 @@ void Viewer::mouseMoveEvent ( QMouseEvent * event ) {
       // We don't want to trigger persistence rotation when the shift key is pressed
       mMouseMoving = false;
     } else {
-      // Allow for rotations around multiple axes simultaneously!
-      mRotAxis = QVector3D(0.0f, 0.0f, 0.0f);
       if(event->buttons() & Qt::LeftButton) {
-        mRotAxis += QVector3D(1.0f, 0.0f, 0.0f);
+        mRotAngle.setX(s);
         rotateWorld(s, 1.0f, 0.0f, 0.0f);
       }
       if(event->buttons() & Qt::MidButton) {
+        mRotAngle.setY(s);
 #ifdef __APPLE__
         // There is some sort of bug with the middle button on Mac OS X systems
         // For some reason, right before releasing the middle mouse button, the event
@@ -267,14 +266,13 @@ void Viewer::mouseMoveEvent ( QMouseEvent * event ) {
         // This correction is needed to allow persistence rotation to work properly
         // when using the middle mouse button
         mRotAngleMB[1] = mRotAngleMB[0];
-        mRotAngleMB[0] = mRotAngle;
-        mRotAngle = mRotAngleMB[1];
+        mRotAngleMB[0] = mRotAngle.y();
+        mRotAngle.setY(mRotAngleMB[1]);
 #endif
-        mRotAxis += QVector3D(0.0f, 1.0f, 0.0f);
         rotateWorld(s, 0.0f, 1.0f, 0.0f);
       }
       if(event->buttons() & Qt::RightButton) {
-        mRotAxis += QVector3D(0.0f, 0.0f, 1.0f);
+        mRotAngle.setZ(s);
         rotateWorld(s, 0.0f, 0.0f, 1.0f);
       }
     }
@@ -312,8 +310,7 @@ void Viewer::scaleWorld(float x, float y, float z) {
 void Viewer::resetView() {
   mMouseCoord.setX(0.0f); mMouseCoord.setY(0.0f);
   mScale = 1.0f;
-  mRotAxis.setX(0.0f); mRotAxis.setY(0.0f); mRotAxis.setZ(0.0f);
-  mRotAngle = 0.0f;
+  mRotAngle = QVector3D(0.0f, 0.0f, 0.0f);
   mPersistence = false;
   mMouseMoving = false;
   mTransformMatrix.setToIdentity();
@@ -410,8 +407,7 @@ void Viewer::updateGame() {
   if(r < 0) {
     // Rotate the board when game is lost
     mPersistence = true;
-    mRotAngle = 5.0f;
-    mRotAxis = QVector3D(1.0f, 0.0f, 0.0f);
+    mRotAngle = QVector3D(0.0f, 5.0f, 0.0f);
   }
 }
 
