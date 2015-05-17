@@ -392,6 +392,12 @@ void Viewer::drawGameBoard() {
 }
 
 void Viewer::updateGame() {
-  mGame.tick();
+  int r = mGame.tick();
+
+  if(r < 0) {
+    mPersistence = true;
+    mRotAngle = 5.0f;
+    mRotAxis = QVector3D(1.0f, 0.0f, 0.0f);
+  }
 }
 
