@@ -121,12 +121,6 @@ void Viewer::initializeGL() {
     glDepthFunc(GL_LEQUAL);
     glDepthRange(0.0f, 1.0f);
 
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 1, 0))
-    glGenVertexArrays(1, &mVAO);
-    glBindVertexArray(mVAO);
-
-#else
-
     /*
      * if qt version is less than 5.1, use the following commented code
      * instead of QOpenGLVertexVufferObject. Also use QGLBuffer instead of
@@ -157,7 +151,6 @@ void Viewer::initializeGL() {
     glGenVertexArrays(1, &mVAO);
     glBindVertexArray(mVAO);
 
-#endif
 
     glGenBuffers(VBO::MAX_VBO, mVBO);
 
@@ -195,14 +188,10 @@ void Viewer::paintGL() {
     // Clear the screen and depth buffer
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 1, 0))
-    glBindVertexArray(mVAO);
-#else
     typedef void (APIENTRY *_glBindVertexArray) (GLuint);
     _glBindVertexArray glBindVertexArray;
     glBindVertexArray = (_glBindVertexArray) QGLWidget::context()->getProcAddress("glBindVertexArray");
     glBindVertexArray(mVAO);
-#endif
 
     // Draw game well
     drawGameBorder();
