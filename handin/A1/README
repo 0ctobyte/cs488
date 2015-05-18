@@ -13,8 +13,6 @@ How to use my extra features:
 The game rotates about the Y axis when the player loses
 
 I have created the following data files, which are in the data directory:
-shader.frag
-shader.vert
 
 
 My program assumes the following: 
