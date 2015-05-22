@@ -97,18 +97,15 @@ void Viewer::initializeGL() {
 
     _glGenBuffers glGenBuffers;
     _glBindBuffer glBindBuffer;
-    _glBufferData glBufferData;
      
     glGenVertexArrays = (_glGenVertexArrays) QGLWidget::context()->getProcAddress("glGenVertexArrays");
     glBindVertexArray = (_glBindVertexArray) QGLWidget::context()->getProcAddress("glBindVertexArray");
     
     glGenBuffers = (_glGenBuffers) QGLWidget::context()->getProcAddress("glGenBuffers");
     glBindBuffer = (_glBindBuffer) QGLWidget::context()->getProcAddress("glBindBuffer");
-    glBufferData = (_glBufferData) QGLWidget::context()->getProcAddress("glBufferData");
 
     glGenVertexArrays(1, &mVAO);
     glBindVertexArray(mVAO);
-
 
     glGenBuffers(1, &mVBO);
     glBindBuffer(GL_ARRAY_BUFFER, mVBO);
