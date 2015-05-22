@@ -66,12 +66,8 @@ protected:
     void draw_init();
 private:
 
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 1, 0))
-    QOpenGLBuffer mVertexBufferObject;
-    QOpenGLVertexArrayObject mVertexArrayObject;
-#else 
-    QGLBuffer mVertexBufferObject;
-#endif
+    GLuint mVAO;
+    GLuint mVBO;
 
     QGLShaderProgram mProgram;
 
@@ -80,6 +76,14 @@ private:
     // *** Fill me in ***
     // You will want to declare some more matrices here
     QMatrix4x4 m_projection;    
+    QMatrix4x4 m_view;
+    QMatrix4x4 m_model;
+    QMatrix4x4 m_modelScale;
+
+    // Model Gnomon points
+    QVector3D m_ModelGnomon[6];
+    QVector3D m_WorldGnomon[6];
+    QVector3D m_Box[24];
 };
 
 #endif

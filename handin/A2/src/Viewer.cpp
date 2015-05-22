@@ -2,8 +2,15 @@
 #include <QtOpenGL>
 #include <iostream>
 #include <cmath>
-#include <GL/gl.h>
-#include <GL/glu.h>
+
+#ifdef __APPLE__
+  #include <OpenGL/gl.h>
+  #include <OpenGL/glu.h>
+#else
+  #include <GL/gl.h>
+  #include <GL/glu.h>
+#endif
+
 #include "Viewer.hpp"
 // #include "draw.hpp"
 
@@ -15,12 +22,11 @@ using namespace std;
 
 Viewer::Viewer(const QGLFormat& format, QWidget *parent) 
     : QGLWidget(format, parent) 
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 1, 0))
-    , mVertexBufferObject(QOpenGLBuffer::VertexBuffer)
-    , mVertexArrayObject(this)
-#else 
-    , mVertexBufferObject(QGLBuffer::VertexBuffer)
-#endif
+    , mVAO(0)
+    , mVBO(0)
+    , m_ModelGnomon({QVector3D(0.0, 0.0, 0.0), QVector3D(0.5, 0.0, 0.0), QVector3D(0.0, 0.0, 0.0), QVector3D(0.0, 0.5, 0.0), QVector3D(0.0, 0.0, 0.0), QVector3D(0.0, 0.0, 0.5)})
+    , m_WorldGnomon({QVector3D(0.0, 0.0, 0.0), QVector3D(0.5, 0.0, 0.0), QVector3D(0.0, 0.0, 0.0), QVector3D(0.0, 0.5, 0.0), QVector3D(0.0, 0.0, 0.0), QVector3D(0.0, 0.0, 0.5)})
+    , m_Box({QVector3D(1.0, 1.0, 1.0), QVector3D(-1.0, 1.0, 1.0), QVector3D(1.0, 1.0, 1.0), QVector3D(1.0, -1.0, 1.0), QVector3D(1.0, -1.0, 1.0), QVector3D(-1.0, -1.0, 1.0), QVector3D(-1.0, -1.0, 1.0), QVector3D(-1.0, 1.0, 1.0), QVector3D(1.0, 1.0, 1.0), QVector3D(1.0, 1.0, -1.0), QVector3D(1.0, -1.0, 1.0), QVector3D(1.0, -1.0, -1.0), QVector3D(-1.0, 1.0, 1.0), QVector3D(-1.0, 1.0, -1.0), QVector3D(-1.0, -1.0, 1.0), QVector3D(-1.0, -1.0, -1.0), QVector3D(1.0, 1.0, -1.0), QVector3D(-1.0, 1.0, -1.0), QVector3D(1.0, 1.0, -1.0), QVector3D(1.0, -1.0, -1.0), QVector3D(1.0, -1.0, -1.0), QVector3D(-1.0, -1.0, -1.0), QVector3D(-1.0, -1.0, -1.0), QVector3D(-1.0, 1.0, -1.0)})
 {
     // Nothing to do here right now.
 }
@@ -73,38 +79,41 @@ void Viewer::initializeGL() {
         return;
     }
 
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 1, 0))
-    mVertexArrayObject.create();
-    mVertexArrayObject.bind();
-
-    mVertexBufferObject.create();
-    mVertexBufferObject.setUsagePattern(QOpenGLBuffer::StaticDraw);
-#else 
-
     /*
      * if qt version is less than 5.1, use the following commented code
      * instead of QOpenGLVertexVufferObject. Also use QGLBuffer instead of 
      * QOpenGLBuffer.
      */
-    uint vao;
-     
     typedef void (APIENTRY *_glGenVertexArrays) (GLsizei, GLuint*);
     typedef void (APIENTRY *_glBindVertexArray) (GLuint);
+
+    // Have to get function pointers for these functions as well -_-
+    typedef void (APIENTRY *_glGenBuffers) (GLsizei, GLuint*);
+    typedef void (APIENTRY *_glBindBuffer) (GLenum, GLuint);
+    typedef void (APIENTRY *_glBufferData) (GLenum, GLsizeiptr, const GLvoid*, GLenum);
      
     _glGenVertexArrays glGenVertexArrays;
     _glBindVertexArray glBindVertexArray;
+
+    _glGenBuffers glGenBuffers;
+    _glBindBuffer glBindBuffer;
+    _glBufferData glBufferData;
      
     glGenVertexArrays = (_glGenVertexArrays) QGLWidget::context()->getProcAddress("glGenVertexArrays");
     glBindVertexArray = (_glBindVertexArray) QGLWidget::context()->getProcAddress("glBindVertexArray");
-     
-    glGenVertexArrays(1, &vao);
-    glBindVertexArray(vao);    
+    
+    glGenBuffers = (_glGenBuffers) QGLWidget::context()->getProcAddress("glGenBuffers");
+    glBindBuffer = (_glBindBuffer) QGLWidget::context()->getProcAddress("glBindBuffer");
+    glBufferData = (_glBufferData) QGLWidget::context()->getProcAddress("glBufferData");
 
-    mVertexBufferObject.create();
-    mVertexBufferObject.setUsagePattern(QGLBuffer::DynamicDraw);
-#endif
+    glGenVertexArrays(1, &mVAO);
+    glBindVertexArray(mVAO);
 
-    if (!mVertexBufferObject.bind()) {
+
+    glGenBuffers(1, &mVBO);
+    glBindBuffer(GL_ARRAY_BUFFER, mVBO);
+
+    if (mVBO == 0) {
         std::cerr << "could not bind vertex buffer to the context." << std::endl;
         return;
     }
@@ -124,16 +133,6 @@ void Viewer::paintGL() {
     
     /* A few of lines are drawn below to show how it's done. */
     set_colour(QColor(1.0, 1.0, 1.0));
-
-    draw_line(QVector2D(-0.9, -0.9), 
-              QVector2D(0.9, 0.9));
-    draw_line(QVector2D(0.9, -0.9),
-              QVector2D(-0.9, 0.9));
-
-    draw_line(QVector2D(-0.9, -0.9),
-              QVector2D(-0.4, -0.9));
-    draw_line(QVector2D(-0.9, -0.9), 
-              QVector2D(-0.9, -0.4));
 }
 
 void Viewer::mousePressEvent ( QMouseEvent * event ) {
@@ -158,7 +157,11 @@ void Viewer::draw_line(const QVector2D& p1, const QVector2D& p2) {
     p2.x(), p2.y(), 1.0
   };
 
-  mVertexBufferObject.allocate(lineVertices, 3 * 2 * sizeof(float));
+  typedef void (APIENTRY *_glBufferData) (GLenum, GLsizeiptr, const GLvoid*, GLenum);
+  _glBufferData glBufferData;
+  glBufferData = (_glBufferData) QGLWidget::context()->getProcAddress("glBufferData");
+
+  glBufferData(GL_ARRAY_BUFFER, 2*3*sizeof(float), lineVertices, GL_STATIC_DRAW); 
 
   glDrawArrays(GL_LINES, 0, 2);
 }
