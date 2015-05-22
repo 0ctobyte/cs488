@@ -4,16 +4,17 @@ User-id: s4bhatta
 Assignment: A1
 
 The final executable was compiled on this machine: 
+gl04
 
 How to invoke my program: 
 ./game488
 
 How to use my extra features: 
-
+The game rotates about the Y axis when the player loses
 
 I have created the following data files, which are in the data directory:
 
 
 My program assumes the following: 
-For multicoloured mode, cubes look the same since each face of a cube is statically assigned a colour.
+For multicoloured mode, cubes look the same since each face of a cube is statically assigned the same colour.
 
