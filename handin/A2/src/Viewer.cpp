@@ -2,17 +2,9 @@
 #include <QtOpenGL>
 #include <iostream>
 #include <cmath>
-
-#ifdef __APPLE__
-  #include <OpenGL/gl.h>
-  #include <OpenGL/glu.h>
-#else
-  #include <GL/gl.h>
-  #include <GL/glu.h>
-#endif
+#include <cstdint>
 
 #include "Viewer.hpp"
-// #include "draw.hpp"
 
 #ifndef GL_MULTISAMPLE
 #define GL_MULTISAMPLE 0x809D
@@ -28,7 +20,6 @@ Viewer::Viewer(const QGLFormat& format, QWidget *parent)
     , m_WorldGnomon({QVector3D(0.0, 0.0, 0.0), QVector3D(0.5, 0.0, 0.0), QVector3D(0.0, 0.0, 0.0), QVector3D(0.0, 0.5, 0.0), QVector3D(0.0, 0.0, 0.0), QVector3D(0.0, 0.0, 0.5)})
     , m_Box({QVector3D(1.0, 1.0, 1.0), QVector3D(-1.0, 1.0, 1.0), QVector3D(1.0, 1.0, 1.0), QVector3D(1.0, -1.0, 1.0), QVector3D(1.0, -1.0, 1.0), QVector3D(-1.0, -1.0, 1.0), QVector3D(-1.0, -1.0, 1.0), QVector3D(-1.0, 1.0, 1.0), QVector3D(1.0, 1.0, 1.0), QVector3D(1.0, 1.0, -1.0), QVector3D(1.0, -1.0, 1.0), QVector3D(1.0, -1.0, -1.0), QVector3D(-1.0, 1.0, 1.0), QVector3D(-1.0, 1.0, -1.0), QVector3D(-1.0, -1.0, 1.0), QVector3D(-1.0, -1.0, -1.0), QVector3D(1.0, 1.0, -1.0), QVector3D(-1.0, 1.0, -1.0), QVector3D(1.0, 1.0, -1.0), QVector3D(1.0, -1.0, -1.0), QVector3D(1.0, -1.0, -1.0), QVector3D(-1.0, -1.0, -1.0), QVector3D(-1.0, -1.0, -1.0), QVector3D(-1.0, 1.0, -1.0)})
 {
-    // Nothing to do here right now.
 }
 
 Viewer::~Viewer() {
@@ -43,10 +34,10 @@ QSize Viewer::sizeHint() const {
     return QSize(300, 300);
 }
 
-void Viewer::set_perspective(double fov, double aspect,
-                             double near, double far)
+void Viewer::set_perspective(double fov, double aspect, double near, double far)
 {
-    // Fill me in!
+  m_Projection.setToIdentity();
+  m_Projection.perspective(fov, aspect, near, far); 
 }
 
 void Viewer::reset_view()
@@ -121,6 +112,14 @@ void Viewer::initializeGL() {
     mProgram.setAttributeBuffer("vert", GL_FLOAT, 0, 3);
 
     mColorLocation = mProgram.uniformLocation("frag_color");
+
+    m_Model.translate(0.0, 0.0, -5.0);
+}
+
+void Viewer::resizeGL(int width, int height) {
+    if(height == 0) height = 1;
+
+    set_perspective(30.0, (double)width/(double)height, 0.001, 1000);
 }
 
 void Viewer::paintGL() {    
@@ -130,6 +129,29 @@ void Viewer::paintGL() {
     
     /* A few of lines are drawn below to show how it's done. */
     set_colour(QColor(1.0, 1.0, 1.0));
+
+    QVector4D P, Q;
+
+    // Draw model gnomon
+    for(uint32_t i = 0; i < 6; i += 2) {
+      P = m_Projection * m_View * m_Model * QVector4D(m_ModelGnomon[i], 1.0f);
+      Q = m_Projection * m_View * m_Model * QVector4D(m_ModelGnomon[i+1], 1.0f);
+      draw_line(QVector2D(P.x()/P.w(), P.y()/P.w()), QVector2D(Q.x()/Q.w(), Q.y()/Q.w()));
+    }
+
+    // Draw box
+    for(uint32_t i = 0; i < 24; i += 2) {
+      P = m_Projection * m_View * m_Model * m_ModelScale * QVector4D(m_Box[i], 1.0f);
+      Q = m_Projection * m_View * m_Model * m_ModelScale * QVector4D(m_Box[i+1], 1.0f);
+      draw_line(QVector2D(P.x()/P.w(), P.y()/P.w()), QVector2D(Q.x()/Q.w(), Q.y()/Q.w()));
+    }
+
+    // Draw world gnomon
+    for(uint32_t i = 0; i < 6; i += 2) {
+      P = m_Projection * m_View * QVector4D(m_WorldGnomon[i], 1.0f);
+      Q = m_Projection * m_View * QVector4D(m_WorldGnomon[i+1], 1.0f);
+      draw_line(QVector2D(P.x(), P.y()), QVector2D(Q.x(), Q.y()));
+    }
 }
 
 void Viewer::mousePressEvent ( QMouseEvent * event ) {
@@ -172,9 +194,6 @@ void Viewer::draw_init() {
     glClearColor(0.7, 0.7, 0.7, 0.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    gluOrtho2D(0.0, (double)width(), 0.0, (double)height());
     glViewport(0, 0, width(), height());
 
     glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);

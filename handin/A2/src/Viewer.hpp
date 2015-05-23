@@ -14,6 +14,8 @@
 #include <QGLBuffer>
 #endif
 
+#include <vector>
+
 class Viewer : public QGLWidget {
     
     Q_OBJECT
@@ -48,6 +50,8 @@ protected:
     virtual void initializeGL();
     // Called when our window needs to be redrawn
     virtual void paintGL();
+    // Called when the window is resized
+    virtual void resizeGL(int width, int height);
     // Called when a mouse button is pressed
     virtual void mousePressEvent ( QMouseEvent * event );
     // Called when a mouse button is released
@@ -75,10 +79,10 @@ private:
     
     // *** Fill me in ***
     // You will want to declare some more matrices here
-    QMatrix4x4 m_projection;    
-    QMatrix4x4 m_view;
-    QMatrix4x4 m_model;
-    QMatrix4x4 m_modelScale;
+    QMatrix4x4 m_Projection;    
+    QMatrix4x4 m_View;
+    QMatrix4x4 m_Model;
+    QMatrix4x4 m_ModelScale;
 
     // Model Gnomon points
     QVector3D m_ModelGnomon[6];

@@ -5,14 +5,10 @@
 QT += opengl widgets
 CONFIG += c++11
 QMAKE_CXXFLAGS += -W -Wall -g -Wno-gnu-array-member-paren-init
-LIBS += -lGLU
+LIBS += 
 TEMPLATE = app
 TARGET = a2
 INCLUDEPATH += .
-
-mac {
-  LIBS -= -lGLU
-}
 
 # Input
 HEADERS += AppWindow.hpp Viewer.hpp 
