@@ -14,12 +14,20 @@ using namespace std;
 
 Viewer::Viewer(const QGLFormat& format, QWidget *parent) 
     : QGLWidget(format, parent) 
+    , m_Mode(M_ROTATE)
     , mVAO(0)
     , mVBO(0)
     , m_ModelGnomon({QVector3D(0.0, 0.0, 0.0), QVector3D(0.5, 0.0, 0.0), QVector3D(0.0, 0.0, 0.0), QVector3D(0.0, 0.5, 0.0), QVector3D(0.0, 0.0, 0.0), QVector3D(0.0, 0.0, 0.5)})
     , m_WorldGnomon({QVector3D(0.0, 0.0, 0.0), QVector3D(0.5, 0.0, 0.0), QVector3D(0.0, 0.0, 0.0), QVector3D(0.0, 0.5, 0.0), QVector3D(0.0, 0.0, 0.0), QVector3D(0.0, 0.0, 0.5)})
     , m_Box({QVector3D(1.0, 1.0, 1.0), QVector3D(-1.0, 1.0, 1.0), QVector3D(1.0, 1.0, 1.0), QVector3D(1.0, -1.0, 1.0), QVector3D(1.0, -1.0, 1.0), QVector3D(-1.0, -1.0, 1.0), QVector3D(-1.0, -1.0, 1.0), QVector3D(-1.0, 1.0, 1.0), QVector3D(1.0, 1.0, 1.0), QVector3D(1.0, 1.0, -1.0), QVector3D(1.0, -1.0, 1.0), QVector3D(1.0, -1.0, -1.0), QVector3D(-1.0, 1.0, 1.0), QVector3D(-1.0, 1.0, -1.0), QVector3D(-1.0, -1.0, 1.0), QVector3D(-1.0, -1.0, -1.0), QVector3D(1.0, 1.0, -1.0), QVector3D(-1.0, 1.0, -1.0), QVector3D(1.0, 1.0, -1.0), QVector3D(1.0, -1.0, -1.0), QVector3D(1.0, -1.0, -1.0), QVector3D(-1.0, -1.0, -1.0), QVector3D(-1.0, -1.0, -1.0), QVector3D(-1.0, 1.0, -1.0)})
+    , m_MouseCoord(0, 0)
+    , m_CamPos(0.0f, 0.0f, 5.0f)
 {
+  reset_view();
+
+  m_Timer = new QTimer(this);
+  connect(m_Timer, SIGNAL(timeout()), this, SLOT(update()));
+  m_Timer->start(1000/30);
 }
 
 Viewer::~Viewer() {
@@ -42,7 +50,17 @@ void Viewer::set_perspective(double fov, double aspect, double near, double far)
 
 void Viewer::reset_view()
 {
-    // Fill me in!
+    // Reset the model matrices
+    m_Model.setToIdentity();
+    m_ModelScale.setToIdentity();
+
+    // Reset the view matrix
+    m_CamPos = QVector3D(0.0f, 0.0f, 5.0f);
+    m_View.setToIdentity();
+    m_View.translate(-m_CamPos);
+    
+    // Reset the projection matrix
+    set_perspective(30.0, (double)width()/(double)height(), 0.001, 1000);
 }
 
 void Viewer::initializeGL() {
@@ -112,8 +130,6 @@ void Viewer::initializeGL() {
     mProgram.setAttributeBuffer("vert", GL_FLOAT, 0, 3);
 
     mColorLocation = mProgram.uniformLocation("frag_color");
-
-    m_Model.translate(0.0, 0.0, -5.0);
 }
 
 void Viewer::resizeGL(int width, int height) {
@@ -150,12 +166,15 @@ void Viewer::paintGL() {
     for(uint32_t i = 0; i < 6; i += 2) {
       P = m_Projection * m_View * QVector4D(m_WorldGnomon[i], 1.0f);
       Q = m_Projection * m_View * QVector4D(m_WorldGnomon[i+1], 1.0f);
-      draw_line(QVector2D(P.x(), P.y()), QVector2D(Q.x(), Q.y()));
+      draw_line(QVector2D(P.x()/P.w(), P.y()/P.w()), QVector2D(Q.x()/Q.w(), Q.y()/Q.w()));
     }
 }
 
 void Viewer::mousePressEvent ( QMouseEvent * event ) {
     std::cerr << "Stub: button " << event->button() << " pressed\n";
+
+    m_MouseCoord.setX(event->x());
+    m_MouseCoord.setY(event->y());
 }
 
 void Viewer::mouseReleaseEvent ( QMouseEvent * event ) {
@@ -164,6 +183,46 @@ void Viewer::mouseReleaseEvent ( QMouseEvent * event ) {
 
 void Viewer::mouseMoveEvent ( QMouseEvent * event ) {
     std::cerr << "Stub: Motion at " << event->x() << ", " << event->y() << std::endl;
+    
+    float s = event->x() - m_MouseCoord.x();
+    QVector3D axis (0.0f, 0.0f, 0.0f);
+
+    if(event->buttons() & Qt::LeftButton) {
+      axis.setX(1.0);
+    }
+
+    if(event->buttons() & Qt::MidButton) {
+      axis.setY(1.0);
+    }
+
+    if(event->buttons() & Qt::RightButton) {
+      axis.setZ(1.0);
+    }
+
+    switch(m_Mode) {
+    case M_ROTATE:
+      m_Model.rotate(s, axis);
+      break;
+    case M_TRANSLATE:
+      m_Model.translate(axis*s);
+      break;
+    case M_SCALE:
+      m_Model.scale(axis*s);
+      break;
+    case V_ROTATE:
+      m_View.rotate(-s, axis);
+      break;
+    case V_TRANSLATE:
+      m_CamPos = (axis*s);
+      m_View.translate(-m_CamPos);
+      break;
+    default:
+      break;
+    }
+
+    // Update the coords to calculate the delta next time this event is triggered
+    m_MouseCoord.setX(event->x());
+    m_MouseCoord.setY(event->y());
 }
 
 // Drawing Functions

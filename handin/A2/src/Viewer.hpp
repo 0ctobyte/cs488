@@ -5,14 +5,6 @@
 #include <QGLShaderProgram>
 #include <QMatrix4x4>
 #include <QtGlobal>
-// #include "algebra.hpp"
-
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 1, 0))
-#include <QOpenGLBuffer>
-#include <QOpenGLVertexArrayObject>
-#else 
-#include <QGLBuffer>
-#endif
 
 #include <vector>
 
@@ -33,14 +25,26 @@ public:
 
     // *** Fill in these functions (in viewer.cpp) ***
 
+    enum Mode {
+      M_TRANSLATE,
+      M_ROTATE,
+      M_SCALE,
+      V_TRANSLATE,
+      V_ROTATE,
+      V_PERSPECTIVE
+    };
+
+
     // Set the parameters of the current perspective projection using
     // the semantics of gluPerspective().
-    void set_perspective(double fov, double aspect,
-                         double near, double far);
+    void set_perspective(double fov, double aspect, double near, double far);
 
     // Restore all the transforms and perspective parameters to their
     // original state. Set the viewport to its initial size.
     void reset_view();
+
+    // Set the control mode
+    void set_mode(Mode mode) { m_Mode = mode; }
 
 protected:
 
@@ -70,6 +74,8 @@ protected:
     void draw_init();
 private:
 
+    Mode m_Mode;
+
     GLuint mVAO;
     GLuint mVBO;
 
@@ -88,6 +94,10 @@ private:
     QVector3D m_ModelGnomon[6];
     QVector3D m_WorldGnomon[6];
     QVector3D m_Box[24];
+
+    QTimer *m_Timer;
+    QVector2D m_MouseCoord;
+    QVector3D m_CamPos;
 };
 
 #endif
