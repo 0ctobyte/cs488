@@ -7,6 +7,7 @@
 #include <QtGlobal>
 
 #include <vector>
+#include <cstdint>
 
 class Viewer : public QGLWidget {
     
@@ -73,6 +74,7 @@ protected:
     // and height of the GL window.
     void draw_init();
 private:
+    void drawArrays(QVector3D *points, size_t num, QMatrix4x4 transform);
 
     Mode m_Mode;
 

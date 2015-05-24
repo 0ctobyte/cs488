@@ -2,13 +2,15 @@
 #include <QtOpenGL>
 #include <iostream>
 #include <cmath>
-#include <cstdint>
 
 #include "Viewer.hpp"
 
 #ifndef GL_MULTISAMPLE
 #define GL_MULTISAMPLE 0x809D
 #endif
+
+#define DELTA2ANGLE(s) (((s)/(double)width())*360.0f)
+#define DELTA2TRANSFORM(axis, s) ((axis)*(s)*2.0/(double)width())
 
 using namespace std;
 
@@ -146,28 +148,14 @@ void Viewer::paintGL() {
     /* A few of lines are drawn below to show how it's done. */
     set_colour(QColor(1.0, 1.0, 1.0));
 
-    QVector4D P, Q;
+    // Draw the world gnomon
+    drawArrays(m_WorldGnomon, 6, m_Projection * m_View);
 
-    // Draw model gnomon
-    for(uint32_t i = 0; i < 6; i += 2) {
-      P = m_Projection * m_View * m_Model * QVector4D(m_ModelGnomon[i], 1.0f);
-      Q = m_Projection * m_View * m_Model * QVector4D(m_ModelGnomon[i+1], 1.0f);
-      draw_line(QVector2D(P.x()/P.w(), P.y()/P.w()), QVector2D(Q.x()/Q.w(), Q.y()/Q.w()));
-    }
+    // Draw the model gnomon
+    drawArrays(m_ModelGnomon, 6, m_Projection * m_View * m_Model);
 
-    // Draw box
-    for(uint32_t i = 0; i < 24; i += 2) {
-      P = m_Projection * m_View * m_Model * m_ModelScale * QVector4D(m_Box[i], 1.0f);
-      Q = m_Projection * m_View * m_Model * m_ModelScale * QVector4D(m_Box[i+1], 1.0f);
-      draw_line(QVector2D(P.x()/P.w(), P.y()/P.w()), QVector2D(Q.x()/Q.w(), Q.y()/Q.w()));
-    }
-
-    // Draw world gnomon
-    for(uint32_t i = 0; i < 6; i += 2) {
-      P = m_Projection * m_View * QVector4D(m_WorldGnomon[i], 1.0f);
-      Q = m_Projection * m_View * QVector4D(m_WorldGnomon[i+1], 1.0f);
-      draw_line(QVector2D(P.x()/P.w(), P.y()/P.w()), QVector2D(Q.x()/Q.w(), Q.y()/Q.w()));
-    }
+    // Draw the box
+    drawArrays(m_Box, 24, m_Projection * m_View * m_Model * m_ModelScale);
 }
 
 void Viewer::mousePressEvent ( QMouseEvent * event ) {
@@ -199,22 +187,26 @@ void Viewer::mouseMoveEvent ( QMouseEvent * event ) {
       axis.setZ(1.0);
     }
 
+    QVector3D transform = DELTA2TRANSFORM(axis, s);
+
     switch(m_Mode) {
     case M_ROTATE:
-      m_Model.rotate(s, axis);
+      m_Model.rotate(DELTA2ANGLE(s), axis);
       break;
     case M_TRANSLATE:
-      m_Model.translate(axis*s);
+      m_Model.translate(transform);
       break;
     case M_SCALE:
-      m_Model.scale(axis*s);
+      m_ModelScale.scale(transform+QVector3D(1.0f, 1.0f, 1.0f));
       break;
     case V_ROTATE:
-      m_View.rotate(-s, axis);
+      m_View.translate(m_CamPos);
+      m_View.rotate(DELTA2ANGLE(-s), axis);
+      m_View.translate(-m_CamPos);
       break;
     case V_TRANSLATE:
-      m_CamPos = (axis*s);
-      m_View.translate(-m_CamPos);
+      m_CamPos = m_CamPos + transform;
+      m_View.translate(-transform);
       break;
     default:
       break;
@@ -223,6 +215,20 @@ void Viewer::mouseMoveEvent ( QMouseEvent * event ) {
     // Update the coords to calculate the delta next time this event is triggered
     m_MouseCoord.setX(event->x());
     m_MouseCoord.setY(event->y());
+}
+
+void Viewer::drawArrays(QVector3D *points, size_t num, QMatrix4x4 transform) {
+  // Round to previous even number
+  if(num & 0x1) num &= ~(0x1);
+  
+  QVector4D P, Q;
+  for(uint32_t i = 0; i < num; i += 2) {
+    P = transform * QVector4D(points[i], 1.0f);
+    Q = transform * QVector4D(points[i+1], 1.0f);
+    P = P / P.w();
+    Q = Q / Q.w();
+    draw_line(QVector2D(P.x(), P.y()), QVector2D(Q.x(), Q.y()));
+  }
 }
 
 // Drawing Functions
