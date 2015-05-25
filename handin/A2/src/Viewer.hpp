@@ -75,6 +75,7 @@ protected:
     void draw_init();
 private:
     void drawArrays(QVector3D *points, size_t num, QMatrix4x4 transform);
+    bool clipLine(QVector4D& P, QVector4D& Q);
 
     Mode m_Mode;
 
@@ -100,6 +101,9 @@ private:
     QTimer *m_Timer;
     QVector2D m_MouseCoord;
     QVector3D m_CamPos;
+
+    float m_zNear;
+    float m_zFar;
 };
 
 #endif

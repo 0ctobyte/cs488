@@ -24,6 +24,8 @@ Viewer::Viewer(const QGLFormat& format, QWidget *parent)
     , m_Box({QVector3D(1.0, 1.0, 1.0), QVector3D(-1.0, 1.0, 1.0), QVector3D(1.0, 1.0, 1.0), QVector3D(1.0, -1.0, 1.0), QVector3D(1.0, -1.0, 1.0), QVector3D(-1.0, -1.0, 1.0), QVector3D(-1.0, -1.0, 1.0), QVector3D(-1.0, 1.0, 1.0), QVector3D(1.0, 1.0, 1.0), QVector3D(1.0, 1.0, -1.0), QVector3D(1.0, -1.0, 1.0), QVector3D(1.0, -1.0, -1.0), QVector3D(-1.0, 1.0, 1.0), QVector3D(-1.0, 1.0, -1.0), QVector3D(-1.0, -1.0, 1.0), QVector3D(-1.0, -1.0, -1.0), QVector3D(1.0, 1.0, -1.0), QVector3D(-1.0, 1.0, -1.0), QVector3D(1.0, 1.0, -1.0), QVector3D(1.0, -1.0, -1.0), QVector3D(1.0, -1.0, -1.0), QVector3D(-1.0, -1.0, -1.0), QVector3D(-1.0, -1.0, -1.0), QVector3D(-1.0, 1.0, -1.0)})
     , m_MouseCoord(0, 0)
     , m_CamPos(0.0f, 0.0f, 5.0f)
+    , m_zNear(0.001)
+    , m_zFar(1000)
 {
   reset_view();
 
@@ -62,7 +64,7 @@ void Viewer::reset_view()
     m_View.translate(-m_CamPos);
     
     // Reset the projection matrix
-    set_perspective(30.0, (double)width()/(double)height(), 0.001, 1000);
+    set_perspective(30.0, (double)width()/(double)height(), m_zNear, m_zFar);
 }
 
 void Viewer::initializeGL() {
@@ -90,11 +92,6 @@ void Viewer::initializeGL() {
         return;
     }
 
-    /*
-     * if qt version is less than 5.1, use the following commented code
-     * instead of QOpenGLVertexVufferObject. Also use QGLBuffer instead of 
-     * QOpenGLBuffer.
-     */
     typedef void (APIENTRY *_glGenVertexArrays) (GLsizei, GLuint*);
     typedef void (APIENTRY *_glBindVertexArray) (GLuint);
 
@@ -137,7 +134,7 @@ void Viewer::initializeGL() {
 void Viewer::resizeGL(int width, int height) {
     if(height == 0) height = 1;
 
-    set_perspective(30.0, (double)width/(double)height, 0.001, 1000);
+    set_perspective(30.0, (double)width/(double)height, m_zNear, m_zFar);
 }
 
 void Viewer::paintGL() {    
@@ -220,16 +217,77 @@ void Viewer::mouseMoveEvent ( QMouseEvent * event ) {
 void Viewer::drawArrays(QVector3D *points, size_t num, QMatrix4x4 transform) {
   // Round to previous even number
   if(num & 0x1) num &= ~(0x1);
-  
+
+  // For each pair of point:
+  // 1. Apply the model, view & projection transformations
+  // 2. Clip the line described by the point pair to the viewing volume
+  // 3. Perspective divide
+  // 4. Map the NDC points to the viewport
+
   QVector4D P, Q;
   for(uint32_t i = 0; i < num; i += 2) {
+    // Apply model, view and projection transformations.The points are now in clip space
     P = transform * QVector4D(points[i], 1.0f);
     Q = transform * QVector4D(points[i+1], 1.0f);
-    P = P / P.w();
-    Q = Q / Q.w();
-    draw_line(QVector2D(P.x(), P.y()), QVector2D(Q.x(), Q.y()));
+
+    // Clip the line to the clipping volume.
+    bool reject = clipLine(P, Q);
+
+    if(!reject) {
+      // Perspective divde. The points are now in NDC space
+      P = P / P.w();
+      Q = Q / Q.w();
+
+      // Map the points from NDC space to screen space
+      // viewportMap(P);
+      // viewportMap(Q);
+
+      // Finally draw the line
+      draw_line(QVector2D(P.x(), P.y()), QVector2D(Q.x(), Q.y()));
+    }
   }
 }
+
+bool Viewer::clipLine(QVector4D& A, QVector4D& B) {
+  // Scale the points so that the w coord for both A and B are matching
+  if(A.w() == 0 || B.w() == 0) return true; 
+  A = (B.w()/A.w())*A;
+
+  // Points on each clip plane
+  // We use w as a point on the plane since w is the value that
+  // is used in perspective division to constrain the coordinates
+  // to the range [-1, 1]. Thus, x, y and z must be within [-w, w]
+  // for it to be in the viewing volume
+  QVector3D P[6] = {
+    QVector3D(A.w(), 0, 0),
+    QVector3D(-A.w(), 0, 0),
+    QVector3D(0, A.w(), 0),
+    QVector3D(0, -A.w(), 0),
+    QVector3D(0, 0, A.w()),
+    QVector3D(0, 0, -A.w()),
+  };
+
+  // Loop through each clip plane and test if the points are within bounds
+  for(uint32_t i = 0; i < 6; i++) {
+    // Get the normal vector for the clip plane
+    // Conceptually, since P is a vector that lies along one of the axes, then the normal
+    // vector is simply the vector in the opposite direction
+    QVector3D n = (-P[i]).normalized();
+
+    float wecA = QVector3D::dotProduct((A.toVector3D()-P[i]), n);
+    float wecB = QVector3D::dotProduct((B.toVector3D()-P[i]), n);
+
+    if(wecA < 0 && wecB < 0) return true; 
+    else if(wecA >= 0 && wecB >= 0) continue;
+
+    float t = wecA/(wecA-wecB);
+
+    if(wecA < 0) A = A + t*(B-A);
+    else B = A + t*(B-A);
+  }
+
+  return false;
+} 
 
 // Drawing Functions
 // ******************* Do Not Touch ************************ // 
