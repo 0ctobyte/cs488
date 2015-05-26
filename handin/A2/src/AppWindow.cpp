@@ -25,11 +25,38 @@ void AppWindow::keyPressEvent(QKeyEvent *event) {
   int key = event->key();
 
   switch(key) {
+  case Qt::Key_Q:
+    close();
+    break;
   case Qt::Key_A:
     m_viewer->reset_view();
   case Qt::Key_R:
-    m_viewer->set_mode(Viewer::Mode::M_ROTATE);
+    setMode(modelModeRotateAct);
     modelModeRotateAct->toggle();
+    break;
+  case Qt::Key_T:
+    setMode(modelModeTranslateAct);
+    modelModeTranslateAct->toggle();
+    break;
+  case Qt::Key_S:
+    setMode(modelModeScaleAct);
+    modelModeScaleAct->toggle();
+    break;
+  case Qt::Key_O:
+    setMode(viewModeRotateAct);
+    viewModeRotateAct->toggle();
+    break;
+  case Qt::Key_N:
+    setMode(viewModeTranslateAct);
+    viewModeTranslateAct->toggle();
+    break;
+  case Qt::Key_P:
+    setMode(viewModePerspectiveAct);
+    viewModePerspectiveAct->toggle();
+    break;
+  case Qt::Key_V:
+    setMode(viewportModeAct);
+    viewportModeAct->toggle();
     break;
   default:
     QWidget::keyPressEvent(event);
@@ -70,6 +97,10 @@ void AppWindow::createActions() {
     modelModeScaleAct->setCheckable(true);
     modelModeScaleAct->setData(Viewer::Mode::M_SCALE);
 
+    viewportModeAct = new QAction(tr("&Viewport mode"), this);
+    viewportModeAct->setCheckable(true);
+    viewportModeAct->setData(Viewer::Mode::VIEWPORT_MODE);
+
     // We set the accelerator keys
     // Alternatively, you could use: setShortcuts(Qt::CTRL + Qt::Key_P); 
     resetAct->setShortcut(QKeySequence(Qt::Key_A));
@@ -83,6 +114,8 @@ void AppWindow::createActions() {
     modelModeTranslateAct->setShortcut(QKeySequence(Qt::Key_T));
     modelModeScaleAct->setShortcut(QKeySequence(Qt::Key_S));
 
+    viewportModeAct->setShortcut(QKeySequence(Qt::Key_V));
+
     // Set the tip
     resetAct->setStatusTip(tr("Resets the view and model transformations to their defaults"));
     quitAct->setStatusTip(tr("Exits the file"));
@@ -94,6 +127,8 @@ void AppWindow::createActions() {
     modelModeTranslateAct->setStatusTip(tr("Translate the box"));
     modelModeRotateAct->setStatusTip(tr("Rotate the box"));
     modelModeScaleAct->setStatusTip(tr("Scale the box"));
+
+    viewportModeAct->setStatusTip(tr("Adjust the viewport"));
 
     // Connect the action with the signal and slot designated
     connect(resetAct, SIGNAL(triggered()), this, SLOT(resetView()));
@@ -109,6 +144,7 @@ void AppWindow::createActions() {
     m_menu_mode_actions.push_back(modeActions->addAction(modelModeTranslateAct));
     m_menu_mode_actions.push_back(modeActions->addAction(modelModeRotateAct));
     m_menu_mode_actions.push_back(modeActions->addAction(modelModeScaleAct));
+    m_menu_mode_actions.push_back(modeActions->addAction(viewportModeAct));
 }
 
 void AppWindow::createMenu() {

@@ -32,7 +32,8 @@ public:
       M_SCALE,
       V_TRANSLATE,
       V_ROTATE,
-      V_PERSPECTIVE
+      V_PERSPECTIVE,
+      VIEWPORT_MODE,
     };
 
 
@@ -55,12 +56,8 @@ protected:
     virtual void initializeGL();
     // Called when our window needs to be redrawn
     virtual void paintGL();
-    // Called when the window is resized
-    virtual void resizeGL(int width, int height);
     // Called when a mouse button is pressed
     virtual void mousePressEvent ( QMouseEvent * event );
-    // Called when a mouse button is released
-    virtual void mouseReleaseEvent ( QMouseEvent * event );
     // Called when the mouse moves
     virtual void mouseMoveEvent ( QMouseEvent * event );
  
@@ -75,7 +72,8 @@ protected:
     void draw_init();
 private:
     void drawArrays(QVector3D *points, size_t num, QMatrix4x4 transform);
-    bool clipLine(QVector4D& P, QVector4D& Q);
+    bool clipLine(QVector4D& A, QVector4D& B);
+    void viewportMap(QVector4D& A);
 
     Mode m_Mode;
 
@@ -97,6 +95,7 @@ private:
     QVector3D m_ModelGnomon[6];
     QVector3D m_WorldGnomon[6];
     QVector3D m_Box[24];
+    QVector3D m_ViewportBorder[8];
 
     QTimer *m_Timer;
     QVector2D m_MouseCoord;
@@ -104,6 +103,9 @@ private:
 
     float m_zNear;
     float m_zFar;
+    float m_vFov;
+
+    QRect m_Viewport;
 };
 
 #endif

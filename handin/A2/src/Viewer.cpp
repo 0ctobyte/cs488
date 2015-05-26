@@ -22,16 +22,16 @@ Viewer::Viewer(const QGLFormat& format, QWidget *parent)
     , m_ModelGnomon({QVector3D(0.0, 0.0, 0.0), QVector3D(0.5, 0.0, 0.0), QVector3D(0.0, 0.0, 0.0), QVector3D(0.0, 0.5, 0.0), QVector3D(0.0, 0.0, 0.0), QVector3D(0.0, 0.0, 0.5)})
     , m_WorldGnomon({QVector3D(0.0, 0.0, 0.0), QVector3D(0.5, 0.0, 0.0), QVector3D(0.0, 0.0, 0.0), QVector3D(0.0, 0.5, 0.0), QVector3D(0.0, 0.0, 0.0), QVector3D(0.0, 0.0, 0.5)})
     , m_Box({QVector3D(1.0, 1.0, 1.0), QVector3D(-1.0, 1.0, 1.0), QVector3D(1.0, 1.0, 1.0), QVector3D(1.0, -1.0, 1.0), QVector3D(1.0, -1.0, 1.0), QVector3D(-1.0, -1.0, 1.0), QVector3D(-1.0, -1.0, 1.0), QVector3D(-1.0, 1.0, 1.0), QVector3D(1.0, 1.0, 1.0), QVector3D(1.0, 1.0, -1.0), QVector3D(1.0, -1.0, 1.0), QVector3D(1.0, -1.0, -1.0), QVector3D(-1.0, 1.0, 1.0), QVector3D(-1.0, 1.0, -1.0), QVector3D(-1.0, -1.0, 1.0), QVector3D(-1.0, -1.0, -1.0), QVector3D(1.0, 1.0, -1.0), QVector3D(-1.0, 1.0, -1.0), QVector3D(1.0, 1.0, -1.0), QVector3D(1.0, -1.0, -1.0), QVector3D(1.0, -1.0, -1.0), QVector3D(-1.0, -1.0, -1.0), QVector3D(-1.0, -1.0, -1.0), QVector3D(-1.0, 1.0, -1.0)})
+    , m_ViewportBorder({QVector3D(-1.0, -1.0, 0.0), QVector3D(1.0, -1.0, 0.0), QVector3D(1.0, -1.0, 0.0), QVector3D(1.0, 1.0, 0.0), QVector3D(1.0, 1.0, 0.0), QVector3D(-1.0, 1.0, 0.0), QVector3D(-1.0, 1.0, 0.0), QVector3D(-1.0, -1.0, 0.0)})
     , m_MouseCoord(0, 0)
-    , m_CamPos(0.0f, 0.0f, 5.0f)
-    , m_zNear(0.001)
-    , m_zFar(1000)
 {
-  reset_view();
-
   m_Timer = new QTimer(this);
   connect(m_Timer, SIGNAL(timeout()), this, SLOT(update()));
   m_Timer->start(1000/30);
+
+  resize(sizeHint());
+
+  reset_view();
 }
 
 Viewer::~Viewer() {
@@ -64,7 +64,17 @@ void Viewer::reset_view()
     m_View.translate(-m_CamPos);
     
     // Reset the projection matrix
-    set_perspective(30.0, (double)width()/(double)height(), m_zNear, m_zFar);
+    QSize size = sizeHint();
+    m_zNear = 1.0f;
+    m_zFar = 100.0f;
+    m_vFov = 30.0f;
+    set_perspective(m_vFov, (double)size.width()/(double)size.height(), m_zNear, m_zFar);
+
+    // Set the viewport
+    m_Viewport.setX(0);
+    m_Viewport.setY(0);
+    m_Viewport.setWidth(size.width());
+    m_Viewport.setHeight(size.height());
 }
 
 void Viewer::initializeGL() {
@@ -131,12 +141,6 @@ void Viewer::initializeGL() {
     mColorLocation = mProgram.uniformLocation("frag_color");
 }
 
-void Viewer::resizeGL(int width, int height) {
-    if(height == 0) height = 1;
-
-    set_perspective(30.0, (double)width/(double)height, m_zNear, m_zFar);
-}
-
 void Viewer::paintGL() {    
     draw_init();
 
@@ -144,6 +148,9 @@ void Viewer::paintGL() {
     
     /* A few of lines are drawn below to show how it's done. */
     set_colour(QColor(1.0, 1.0, 1.0));
+
+    // Draw the viewport border
+    drawArrays(m_ViewportBorder, 8, QMatrix4x4());
 
     // Draw the world gnomon
     drawArrays(m_WorldGnomon, 6, m_Projection * m_View);
@@ -156,19 +163,18 @@ void Viewer::paintGL() {
 }
 
 void Viewer::mousePressEvent ( QMouseEvent * event ) {
-    std::cerr << "Stub: button " << event->button() << " pressed\n";
-
     m_MouseCoord.setX(event->x());
     m_MouseCoord.setY(event->y());
-}
 
-void Viewer::mouseReleaseEvent ( QMouseEvent * event ) {
-    std::cerr << "Stub: button " << event->button() << " released\n";
+    if(m_Mode == VIEWPORT_MODE) {
+      m_Viewport.setX(m_MouseCoord.x());
+      m_Viewport.setY(height()-m_MouseCoord.y());
+      m_Viewport.setWidth(0);
+      m_Viewport.setHeight(0);
+    }
 }
 
 void Viewer::mouseMoveEvent ( QMouseEvent * event ) {
-    std::cerr << "Stub: Motion at " << event->x() << ", " << event->y() << std::endl;
-    
     float s = event->x() - m_MouseCoord.x();
     QVector3D axis (0.0f, 0.0f, 0.0f);
 
@@ -205,6 +211,22 @@ void Viewer::mouseMoveEvent ( QMouseEvent * event ) {
       m_CamPos = m_CamPos + transform;
       m_View.translate(-transform);
       break;
+    case V_PERSPECTIVE:
+      if(event->buttons() & Qt::LeftButton) {
+        m_vFov = ((m_vFov + s) >= 5) ? (((m_vFov + s) <= 160) ? m_vFov + s : 160) : 5;
+      }
+      if(event->buttons() & Qt::MidButton) {
+        m_zNear = m_zNear + s;
+      }
+      if(event->buttons() & Qt::RightButton) {
+        m_zFar = m_zFar + s;
+      }
+      set_perspective(m_vFov, (float)abs(m_Viewport.width())/(float)abs(m_Viewport.height()), m_zNear, m_zFar);
+      break;
+    case VIEWPORT_MODE:
+      m_Viewport.setWidth((event->x() >= 0 ) ? ((event->x() <= width()) ? (event->x()-m_Viewport.x()) : (width()-m_Viewport.x())) : (0-m_Viewport.x()));
+      m_Viewport.setHeight((event->y() >= 0 ) ? ((event->y() <= height()) ? ((height()-event->y())-m_Viewport.y()) : (0-m_Viewport.y())) : (height()-m_Viewport.y()));
+      break;
     default:
       break;
     }
@@ -239,8 +261,8 @@ void Viewer::drawArrays(QVector3D *points, size_t num, QMatrix4x4 transform) {
       Q = Q / Q.w();
 
       // Map the points from NDC space to screen space
-      // viewportMap(P);
-      // viewportMap(Q);
+      viewportMap(P);
+      viewportMap(Q);
 
       // Finally draw the line
       draw_line(QVector2D(P.x(), P.y()), QVector2D(Q.x(), Q.y()));
@@ -249,45 +271,49 @@ void Viewer::drawArrays(QVector3D *points, size_t num, QMatrix4x4 transform) {
 }
 
 bool Viewer::clipLine(QVector4D& A, QVector4D& B) {
-  // Scale the points so that the w coord for both A and B are matching
-  if(A.w() == 0 || B.w() == 0) return true; 
-  A = (B.w()/A.w())*A;
-
-  // Points on each clip plane
-  // We use w as a point on the plane since w is the value that
-  // is used in perspective division to constrain the coordinates
-  // to the range [-1, 1]. Thus, x, y and z must be within [-w, w]
-  // for it to be in the viewing volume
-  QVector3D P[6] = {
-    QVector3D(A.w(), 0, 0),
-    QVector3D(-A.w(), 0, 0),
-    QVector3D(0, A.w(), 0),
-    QVector3D(0, -A.w(), 0),
-    QVector3D(0, 0, A.w()),
-    QVector3D(0, 0, -A.w()),
-  };
+  // All 6 clip planes
+  float P[6] = {A.x(), -A.x(), A.y(), -A.y(), A.z(), -A.z()};
+  float Q[6] = {B.x(), -B.x(), B.y(), -B.y(), B.z(), -B.z()};
 
   // Loop through each clip plane and test if the points are within bounds
   for(uint32_t i = 0; i < 6; i++) {
-    // Get the normal vector for the clip plane
-    // Conceptually, since P is a vector that lies along one of the axes, then the normal
-    // vector is simply the vector in the opposite direction
-    QVector3D n = (-P[i]).normalized();
+    // Mirror the coordinates on the W axis if they are behind the W=0 projection plane
+    if(A.w() < 0) A.setW(-A.w());
+    if(B.w() < 0) B.setW(-B.w());
 
-    float wecA = QVector3D::dotProduct((A.toVector3D()-P[i]), n);
-    float wecB = QVector3D::dotProduct((B.toVector3D()-P[i]), n);
+    // Trivially accept the line if it is within the {x,y,z}=w plane.
+    // Trivially reject the line if it is completely outside of the viewing volume
+    if(((A.w() > 0 && (A.w() + P[i]) >= 0) || (A.w() < 0 && (A.w() + P[i]) <= 0)) && ((B.w() > 0 && (B.w() + Q[i]) >= 0) || (B.w() < 0 && (B.w() + Q[i]) <= 0))) continue;
+    else if(((A.w() > 0 && (A.w() + P[i]) < 0) || (A.w() < 0 && (A.w() + P[i]) > 0)) && ((B.w() > 0 && (B.w() + Q[i]) < 0) || (B.w() < 0 && (B.w() + Q[i]) > 0))) return true;
 
-    if(wecA < 0 && wecB < 0) return true; 
-    else if(wecA >= 0 && wecB >= 0) continue;
+    // Use the parametric equation of a line intersecting with a plane to find parameter a
+    // This is the distance from point A to the intersection of the plane
+    float a = (A.w() + P[i]) / ((A.w() + P[i]) - (B.w() + Q[i]));
 
-    float t = wecA/(wecA-wecB);
-
-    if(wecA < 0) A = A + t*(B-A);
-    else B = A + t*(B-A);
+    // Use the parametric line equation to find the intersect point
+    if((A.w() > 0 && (A.w() + P[i]) < 0) || (A.w() < 0 && (A.w() + P[i]) > 0)) {
+      A = A + a*(B-A);
+    } else {
+      B = A + a*(B-A);
+    }
   }
 
   return false;
 } 
+
+void Viewer::viewportMap(QVector4D& A) {
+  QMatrix4x4 M;
+
+  float x = (2.0*m_Viewport.x())/(float)width()-1;
+  float y = (2.0*m_Viewport.y())/(float)height()-1;
+  float w = (2.0*(m_Viewport.x()+m_Viewport.width()))/(float)width()-1;
+  float h = (2.0*(m_Viewport.y()+m_Viewport.height()))/(float)height()-1;
+
+  M.translate((x + w)/2.0, (y + h)/2.0, 0);
+  M.scale(fabs((float)m_Viewport.width()/(float)width()), fabs((float)m_Viewport.height()/(float)height()), 0); 
+
+  A = M*A;
+}
 
 // Drawing Functions
 // ******************* Do Not Touch ************************ // 

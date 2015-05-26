@@ -33,7 +33,7 @@ private:
     QAction* modelModeTranslateAct;
     QAction* modelModeRotateAct;
     QAction* modelModeScaleAct;
-    QAction* viewPortModeAct;
+    QAction* viewportModeAct;
 
     // Each menu itself
     QMenu* m_menu_app;
