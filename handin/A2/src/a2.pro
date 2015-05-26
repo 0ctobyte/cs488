@@ -11,5 +11,5 @@ TARGET = a2
 INCLUDEPATH += .
 
 # Input
-HEADERS += AppWindow.hpp Viewer.hpp 
-SOURCES += main.cpp AppWindow.cpp Viewer.cpp 
+HEADERS += AppWindow.hpp Viewer.hpp a2.hpp 
+SOURCES += main.cpp AppWindow.cpp Viewer.cpp a2.cpp

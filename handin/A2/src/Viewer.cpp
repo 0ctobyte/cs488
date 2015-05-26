@@ -3,6 +3,7 @@
 #include <iostream>
 #include <cmath>
 
+#include "a2.hpp"
 #include "Viewer.hpp"
 
 #ifndef GL_MULTISAMPLE
@@ -61,7 +62,7 @@ void Viewer::reset_view()
     // Reset the view matrix
     m_CamPos = QVector3D(0.0f, 0.0f, 5.0f);
     m_View.setToIdentity();
-    m_View.translate(-m_CamPos);
+    translate(m_View, -m_CamPos);
     
     // Reset the projection matrix
     QSize size = sizeHint();
@@ -194,22 +195,22 @@ void Viewer::mouseMoveEvent ( QMouseEvent * event ) {
 
     switch(m_Mode) {
     case M_ROTATE:
-      m_Model.rotate(DELTA2ANGLE(s), axis);
+      rotate(m_Model, DELTA2ANGLE(s), axis);
       break;
     case M_TRANSLATE:
-      m_Model.translate(transform);
+      translate(m_Model, transform);
       break;
     case M_SCALE:
-      m_ModelScale.scale(transform+QVector3D(1.0f, 1.0f, 1.0f));
+      scale(m_ModelScale, transform+QVector3D(1.0f, 1.0f, 1.0f));
       break;
     case V_ROTATE:
-      m_View.translate(m_CamPos);
-      m_View.rotate(DELTA2ANGLE(-s), axis);
-      m_View.translate(-m_CamPos);
+      translate(m_View, m_CamPos);
+      rotate(m_View, DELTA2ANGLE(-s), axis);
+      translate(m_View, -m_CamPos);
       break;
     case V_TRANSLATE:
       m_CamPos = m_CamPos + transform;
-      m_View.translate(-transform);
+      translate(m_View, -transform);
       break;
     case V_PERSPECTIVE:
       if(event->buttons() & Qt::LeftButton) {
@@ -309,8 +310,8 @@ void Viewer::viewportMap(QVector4D& A) {
   float w = (2.0*(m_Viewport.x()+m_Viewport.width()))/(float)width()-1;
   float h = (2.0*(m_Viewport.y()+m_Viewport.height()))/(float)height()-1;
 
-  M.translate((x + w)/2.0, (y + h)/2.0, 0);
-  M.scale(fabs((float)m_Viewport.width()/(float)width()), fabs((float)m_Viewport.height()/(float)height()), 0); 
+  translate(M, QVector3D((x + w)/2.0, (y + h)/2.0, 0));
+  scale(M, QVector3D(fabs((float)m_Viewport.width()/(float)width()), fabs((float)m_Viewport.height()/(float)height()), 0)); 
 
   A = M*A;
 }
