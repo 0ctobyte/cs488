@@ -10,8 +10,8 @@
 #define GL_MULTISAMPLE 0x809D
 #endif
 
-#define DELTA2ANGLE(s) (((s)/(double)width())*360.0f)
-#define DELTA2TRANSFORM(axis, s) ((axis)*(s)*2.0/(double)width())
+#define DELTA2ANGLE(s) (((s)/(double)fabs(m_Viewport.width()))*360.0f)
+#define DELTA2TRANSFORM(axis, s) ((axis)*(s)*2.0/(double)fabs(m_Viewport.width()))
 
 using namespace std;
 
@@ -156,15 +156,19 @@ void Viewer::paintGL() {
     set_colour(QColor(1.0, 1.0, 1.0));
 
     // Draw the viewport border
+    set_colour(QColor(0.0, 0.0, 0.0));
     drawArrays(m_ViewportBorder, 8, QMatrix4x4());
 
     // Draw the world gnomon
+    set_colour(QColor(0.0, 1.0, 0.0));
     drawArrays(m_WorldGnomon, 6, m_Projection * m_View);
 
     // Draw the model gnomon
+    set_colour(QColor(1.0, 0.0, 0.0));
     drawArrays(m_ModelGnomon, 6, m_Projection * m_View * m_Model);
 
     // Draw the box
+    set_colour(QColor(1.0, 1.0, 1.0));
     drawArrays(m_Box, 24, m_Projection * m_View * m_Model * m_ModelScale);
 }
 
