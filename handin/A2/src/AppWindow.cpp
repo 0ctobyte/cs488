@@ -14,6 +14,7 @@ AppWindow::AppWindow() {
     // m_menubar = new QMenuBar;
     m_viewer = new Viewer(glFormat, this);
     layout->addWidget(m_viewer);
+    layout->setContentsMargins(0, 0, 0, 0);
     setCentralWidget(new QWidget);
     centralWidget()->setLayout(layout);
 
