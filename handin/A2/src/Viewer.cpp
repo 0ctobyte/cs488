@@ -69,7 +69,7 @@ void Viewer::reset_view()
     // Reset the projection matrix
     QSize size = sizeHint();
     m_zNear = 1.0f;
-    m_zFar = 100.0f;
+    m_zFar = 10.0f;
     m_vFov = 30.0f;
     set_perspective(m_vFov, (double)size.width()/(double)size.height(), m_zNear, m_zFar);
 
