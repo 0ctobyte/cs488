@@ -13,13 +13,27 @@ AppWindow::AppWindow() {
     QVBoxLayout *layout = new QVBoxLayout;
     // m_menubar = new QMenuBar;
     m_viewer = new Viewer(glFormat, this);
+    m_infoLabel = new QLabel(this);
     layout->addWidget(m_viewer);
+    layout->addWidget(m_infoLabel);
     layout->setContentsMargins(0, 0, 0, 0);
     setCentralWidget(new QWidget);
     centralWidget()->setLayout(layout);
 
     createActions();
     createMenu();
+
+    // Set the font size, alignment to center, and fixed height for label
+    QFont font;
+    font.setPointSize(11);
+    m_infoLabel->setAlignment(Qt::AlignHCenter);
+    m_infoLabel->setFont(font);
+    m_infoLabel->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+
+    // Update info label 30 times a second
+    QTimer* timer = new QTimer(this);
+    connect(timer, SIGNAL(timeout()), this, SLOT(updateInfoLabel()));
+    timer->start(1000/30);
 }
 
 void AppWindow::keyPressEvent(QKeyEvent *event) {
@@ -173,3 +187,39 @@ void AppWindow::resetView() {
   m_viewer->reset_view();
 }
 
+void AppWindow::updateInfoLabel() {
+  Viewer::Mode mode;
+  float fovy, znear, zfar;
+
+  m_viewer->get_parameters(&mode, &fovy, &znear, &zfar);
+
+  QString modestr;
+  switch(mode) {
+  case Viewer::Mode::M_ROTATE:
+    modestr = QString("model_rotate");
+    break;
+  case Viewer::Mode::M_TRANSLATE:
+    modestr = QString("model_translate");
+    break;
+  case Viewer::Mode::M_SCALE:
+    modestr = QString("model_scale");
+    break;
+  case Viewer::Mode::V_ROTATE:
+    modestr = QString("view_rotate");
+    break;
+  case Viewer::Mode::V_TRANSLATE:
+    modestr = QString("view_translate");
+    break;
+  case Viewer::Mode::V_PERSPECTIVE:
+    modestr = QString("view_perspective");
+    break;
+  case Viewer::Mode::VIEWPORT_MODE:
+    modestr = QString("viewport_mode");
+    break;
+  }
+
+  QString info = QString("mode: %1 | fov: %2 | znear: %3 | zfar: %4").arg(modestr).arg(fovy).arg(znear).arg(zfar);
+  
+  m_infoLabel->setText(info);
+}      
+        

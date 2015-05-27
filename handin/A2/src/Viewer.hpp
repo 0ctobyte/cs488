@@ -48,6 +48,9 @@ public:
     // Set the control mode
     void set_mode(Mode mode) { m_Mode = mode; }
 
+    // Get parameters for display
+    void get_parameters(Mode* mode, float* fovy, float* znear, float* zfar) { *mode = m_Mode; *fovy = m_vFov; *znear = m_zNear; *zfar = m_zFar; }
+
 protected:
 
     // Events we implement

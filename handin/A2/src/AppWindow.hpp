@@ -5,6 +5,7 @@
 #include <QMenuBar>
 #include <QMenu>
 #include <QAction>
+#include <QLabel>
 #include <vector>
 #include "Viewer.hpp"
 
@@ -21,6 +22,7 @@ protected:
 private slots:
     void setMode(QAction *act);
     void resetView();
+    void updateInfoLabel(); 
 
 private:
     void createActions();
@@ -42,6 +44,7 @@ private:
     std::vector<QAction*> m_menu_app_actions;
     std::vector<QAction*> m_menu_mode_actions;
     Viewer* m_viewer;
+    QLabel* m_infoLabel;
 };
 
 #endif
