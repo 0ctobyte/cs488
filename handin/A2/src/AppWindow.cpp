@@ -34,6 +34,11 @@ AppWindow::AppWindow() {
     QTimer* timer = new QTimer(this);
     connect(timer, SIGNAL(timeout()), this, SLOT(updateInfoLabel()));
     timer->start(1000/30);
+
+    // Reset the view
+    updateInfoLabel();
+    show();
+    m_viewer->reset_view();
 }
 
 void AppWindow::keyPressEvent(QKeyEvent *event) {

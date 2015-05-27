@@ -67,20 +67,19 @@ void Viewer::reset_view()
     translate(m_View, -m_CamPos);
     
     // Reset the projection matrix
-    QSize size = sizeHint();
     m_zNear = 1.0f;
     m_zFar = 10.0f;
     m_vFov = 30.0f;
-    set_perspective(m_vFov, (double)size.width()/(double)size.height(), m_zNear, m_zFar);
+    set_perspective(m_vFov, (double)width()/(double)height(), m_zNear, m_zFar);
 
     // Set the viewport
     // 5% margins around the viewport
-    float hmargin = 0.05*(float)size.height();
-    float wmargin = 0.05*(float)size.width();
+    float hmargin = 0.05*(float)height();
+    float wmargin = 0.05*(float)width();
     m_Viewport.setX(wmargin);
     m_Viewport.setY(hmargin);
-    m_Viewport.setWidth(size.width()-2*wmargin);
-    m_Viewport.setHeight(size.height()-2*hmargin);
+    m_Viewport.setWidth(width()-2*wmargin);
+    m_Viewport.setHeight(height()-2*hmargin);
 }
 
 void Viewer::initializeGL() {
