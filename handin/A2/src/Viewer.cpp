@@ -326,7 +326,7 @@ void Viewer::viewportMap(QVector4D& A, QVector4D& B) {
   // Scale the world to fit within the viewports boundary
   scale(M, QVector3D(fabs((float)m_Viewport.width()/(float)width()), fabs((float)m_Viewport.height()/(float)height()), 0)); 
 
-  // Transfor the points
+  // Transform the points
   A = M*A;
   B = M*B;
 }
