@@ -1,4 +1,4 @@
-#version 130
+#version 330
 
 uniform vec3 frag_color;
 
