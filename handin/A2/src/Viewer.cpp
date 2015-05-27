@@ -49,19 +49,19 @@ QSize Viewer::sizeHint() const {
 
 void Viewer::set_perspective(double fov, double aspect, double near, double far)
 {
-  m_Projection.setToIdentity();
-  m_Projection.perspective(fov, aspect, near, far); 
+  identity(m_Projection);
+  perspective(m_Projection, fov, aspect, near, far); 
 }
 
 void Viewer::reset_view()
 {
     // Reset the model matrices
-    m_Model.setToIdentity();
-    m_ModelScale.setToIdentity();
+    identity(m_Model);
+    identity(m_ModelScale);
 
     // Reset the view matrix
     m_CamPos = QVector3D(0.0f, 0.0f, 5.0f);
-    m_View.setToIdentity();
+    identity(m_View);
     translate(m_View, -m_CamPos);
     
     // Reset the projection matrix
@@ -284,15 +284,15 @@ bool Viewer::clipLine(QVector4D& A, QVector4D& B) {
 
     // Trivially accept the line if it is within the {x,y,z}=w plane.
     // Trivially reject the line if it is completely outside of the viewing volume
-    if(((A.w() > 0 && (A.w() + P[i]) >= 0) || (A.w() < 0 && (A.w() + P[i]) <= 0)) && ((B.w() > 0 && (B.w() + Q[i]) >= 0) || (B.w() < 0 && (B.w() + Q[i]) <= 0))) continue;
-    else if(((A.w() > 0 && (A.w() + P[i]) < 0) || (A.w() < 0 && (A.w() + P[i]) > 0)) && ((B.w() > 0 && (B.w() + Q[i]) < 0) || (B.w() < 0 && (B.w() + Q[i]) > 0))) return true;
+    if((A.w() > 0 && (A.w() + P[i]) >= 0) && (B.w() > 0 && (B.w() + Q[i]) >= 0)) continue;
+    else if((A.w() > 0 && (A.w() + P[i]) < 0) && (B.w() > 0 && (B.w() + Q[i]) < 0)) return true;
 
     // Use the parametric equation of a line intersecting with a plane to find parameter a
     // This is the distance from point A to the intersection of the plane
     float a = (A.w() + P[i]) / ((A.w() + P[i]) - (B.w() + Q[i]));
 
     // Use the parametric line equation to find the intersect point
-    if((A.w() > 0 && (A.w() + P[i]) < 0) || (A.w() < 0 && (A.w() + P[i]) > 0)) {
+    if(A.w() > 0 && (A.w() + P[i]) < 0) {
       A = A + a*(B-A);
     } else {
       B = A + a*(B-A);

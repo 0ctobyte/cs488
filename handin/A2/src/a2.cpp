@@ -2,6 +2,13 @@
 
 #include "a2.hpp"
 
+void identity(QMatrix4x4& matrix) {
+  float *data = matrix.data();
+  for(int i = 0; i < 16; i++) {
+    data[i] = ((i % 5) == 0) ? 1.0 : 0.0;
+  }
+}
+
 void rotate(QMatrix4x4& matrix, float angle, const QVector3D& vector) {
   QMatrix4x4 r;
   r.setToIdentity();
@@ -57,5 +64,22 @@ void scale(QMatrix4x4& matrix, const QVector3D& vector) {
   data[10] = vector.z();
 
   matrix = matrix * s;
+}
+
+void perspective(QMatrix4x4& matrix, double fovy, double aspect, double near, double far) {
+  QMatrix4x4 p;
+  float *data = p.data();
+
+  float one_over_tan = 1.0f/tan((fovy*(M_PI/180.0f))/2.0f);
+  float nz_fz = near-far;
+
+  data[0] = one_over_tan/aspect;
+  data[5] = one_over_tan;
+  data[10] = (near+far)/(nz_fz);
+  data[11] = -1.0f;
+  data[14] = (2.0f*far*near)/nz_fz;
+  data[15] = 0.0f;
+
+  matrix = matrix * p;
 }
 
