@@ -114,7 +114,6 @@ void Viewer::initializeGL() {
     // Have to get function pointers for these functions as well -_-
     typedef void (APIENTRY *_glGenBuffers) (GLsizei, GLuint*);
     typedef void (APIENTRY *_glBindBuffer) (GLenum, GLuint);
-    typedef void (APIENTRY *_glBufferData) (GLenum, GLsizeiptr, const GLvoid*, GLenum);
      
     _glGenVertexArrays glGenVertexArrays;
     _glBindVertexArray glBindVertexArray;
