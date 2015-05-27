@@ -74,10 +74,13 @@ void Viewer::reset_view()
     set_perspective(m_vFov, (double)size.width()/(double)size.height(), m_zNear, m_zFar);
 
     // Set the viewport
-    m_Viewport.setX(0);
-    m_Viewport.setY(0);
-    m_Viewport.setWidth(size.width());
-    m_Viewport.setHeight(size.height());
+    // 5% margins around the viewport
+    float hmargin = 0.05*(float)size.height();
+    float wmargin = 0.05*(float)size.width();
+    m_Viewport.setX(wmargin);
+    m_Viewport.setY(hmargin);
+    m_Viewport.setWidth(size.width()-2*wmargin);
+    m_Viewport.setHeight(size.height()-2*hmargin);
 }
 
 void Viewer::initializeGL() {
@@ -311,7 +314,7 @@ bool Viewer::clipLine(QVector4D& A, QVector4D& B) {
 void Viewer::viewportMap(QVector4D& A, QVector4D& B) {
   QMatrix4x4 M;
 
-  // These equations find the corner points of viewport in terms of the widgets window
+  // These equations find the corner points of viewport in terms of the widgets normalized window
   float x = (2.0*m_Viewport.x())/(float)width()-1;
   float y = (2.0*m_Viewport.y())/(float)height()-1;
   float w = (2.0*(m_Viewport.x()+m_Viewport.width()))/(float)width()-1;
