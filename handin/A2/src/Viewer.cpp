@@ -295,15 +295,15 @@ bool Viewer::clipLine(QVector4D& A, QVector4D& B) {
 
     // Trivially accept the line if it is within the {x,y,z}=w plane.
     // Trivially reject the line if it is completely outside of the viewing volume
-    if(((A.w() > 0 && (A.w() + P[i]) >= 0) || (A.w() < 0 && (A.w() + P[i]) <= 0)) && ((B.w() > 0 && (B.w() + Q[i]) >= 0) || (B.w() < 0 && (B.w() + Q[i] <= 0)))) continue;
-    else if(((A.w() > 0 && (A.w() + P[i]) < 0) || (A.w() < 0 && (A.w() + P[i]) > 0)) && ((B.w() > 0 && (B.w() + Q[i]) < 0) || (B.w() < 0 && (B.w() + Q[i]) > 0))) return true;
+    if((A.w() > 0 && (A.w() + P[i]) >= 0) && (B.w() > 0 && (B.w() + Q[i]) >= 0)) continue;
+    else if((A.w() > 0 && (A.w() + P[i]) < 0) && (B.w() > 0 && (B.w() + Q[i]) < 0)) return true;
 
     // Use the parametric equation of a line intersecting with a plane to find parameter a
     // This is the distance from point A to the intersection of the plane
     float a = (A.w() + P[i]) / ((A.w() + P[i]) - (B.w() + Q[i]));
 
     // Use the parametric line equation to find the intersect point
-    if((A.w() > 0 && (A.w() + P[i]) < 0) || (A.w() < 0 && (A.w() + P[i]) > 0)) {
+    if(A.w() > 0 && (A.w() + P[i]) < 0) {
       A = A + a*(B-A);
     } else {
       B = A + a*(B-A);
