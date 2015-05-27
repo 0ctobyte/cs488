@@ -73,7 +73,7 @@ protected:
 private:
     void drawArrays(QVector3D *points, size_t num, QMatrix4x4 transform);
     bool clipLine(QVector4D& A, QVector4D& B);
-    void viewportMap(QVector4D& A);
+    void viewportMap(QVector4D& A, QVector4D& B);
 
     Mode m_Mode;
 

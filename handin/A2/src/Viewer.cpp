@@ -30,6 +30,8 @@ Viewer::Viewer(const QGLFormat& format, QWidget *parent)
   connect(m_Timer, SIGNAL(timeout()), this, SLOT(update()));
   m_Timer->start(1000/30);
 
+  // This is needed since the widget defaults to a smaller size before being resized
+  // to sizeHint size. This forces the widget to just resize to sizeHint right away
   resize(sizeHint());
 
   reset_view();
@@ -204,11 +206,15 @@ void Viewer::mouseMoveEvent ( QMouseEvent * event ) {
       scale(m_ModelScale, transform+QVector3D(1.0f, 1.0f, 1.0f));
       break;
     case V_ROTATE:
+      // Need to translate camera back to origin before rotating
+      // A transformation on the camera means an equal but opposite transformation for objects in the world
       translate(m_View, m_CamPos);
       rotate(m_View, DELTA2ANGLE(-s), axis);
       translate(m_View, -m_CamPos);
       break;
     case V_TRANSLATE:
+      // Keep track of the camera position
+      // A transformation on the camera means an equal but opposite transformation for objects in the world
       m_CamPos = m_CamPos + transform;
       translate(m_View, -transform);
       break;
@@ -225,6 +231,7 @@ void Viewer::mouseMoveEvent ( QMouseEvent * event ) {
       set_perspective(m_vFov, (float)abs(m_Viewport.width())/(float)abs(m_Viewport.height()), m_zNear, m_zFar);
       break;
     case VIEWPORT_MODE:
+      // Clamp the viewport to the edges of the widget
       m_Viewport.setWidth((event->x() >= 0 ) ? ((event->x() <= width()) ? (event->x()-m_Viewport.x()) : (width()-m_Viewport.x())) : (0-m_Viewport.x()));
       m_Viewport.setHeight((event->y() >= 0 ) ? ((event->y() <= height()) ? ((height()-event->y())-m_Viewport.y()) : (0-m_Viewport.y())) : (height()-m_Viewport.y()));
       break;
@@ -242,8 +249,8 @@ void Viewer::drawArrays(QVector3D *points, size_t num, QMatrix4x4 transform) {
   if(num & 0x1) num &= ~(0x1);
 
   // For each pair of point:
-  // 1. Apply the model, view & projection transformations
-  // 2. Clip the line described by the point pair to the viewing volume
+  // 1. Apply any (model, view & projection) transformations
+  // 2. Clip the line described by the point pair to the viewing volume in homogeneous coordinate space
   // 3. Perspective divide
   // 4. Map the NDC points to the viewport
 
@@ -262,8 +269,7 @@ void Viewer::drawArrays(QVector3D *points, size_t num, QMatrix4x4 transform) {
       Q = Q / Q.w();
 
       // Map the points from NDC space to screen space
-      viewportMap(P);
-      viewportMap(Q);
+      viewportMap(P, Q);
 
       // Finally draw the line
       draw_line(QVector2D(P.x(), P.y()), QVector2D(Q.x(), Q.y()));
@@ -302,18 +308,24 @@ bool Viewer::clipLine(QVector4D& A, QVector4D& B) {
   return false;
 } 
 
-void Viewer::viewportMap(QVector4D& A) {
+void Viewer::viewportMap(QVector4D& A, QVector4D& B) {
   QMatrix4x4 M;
 
+  // These equations find the corner points of viewport in terms of the widgets window
   float x = (2.0*m_Viewport.x())/(float)width()-1;
   float y = (2.0*m_Viewport.y())/(float)height()-1;
   float w = (2.0*(m_Viewport.x()+m_Viewport.width()))/(float)width()-1;
   float h = (2.0*(m_Viewport.y()+m_Viewport.height()))/(float)height()-1;
-
+  
+  // Translate the world to center on viewports origin
   translate(M, QVector3D((x + w)/2.0, (y + h)/2.0, 0));
+
+  // Scale the world to fit within the viewports boundary
   scale(M, QVector3D(fabs((float)m_Viewport.width()/(float)width()), fabs((float)m_Viewport.height()/(float)height()), 0)); 
 
+  // Transfor the points
   A = M*A;
+  B = M*B;
 }
 
 // Drawing Functions
