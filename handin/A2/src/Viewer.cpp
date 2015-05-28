@@ -287,12 +287,19 @@ bool Viewer::clipLine(QVector4D& A, QVector4D& B) {
   float P[6] = {A.x(), -A.x(), A.y(), -A.y(), A.z(), -A.z()};
   float Q[6] = {B.x(), -B.x(), B.y(), -B.y(), B.z(), -B.z()};
 
+  // If any of the points are behind the W=0 plane, mirror them back onto the W>0 plane
+  if(A.w() < 0 && B.w() < 0) {
+    return true;
+  } else if(A.w() < 0) {
+    float a = A.w() / (A.w() - B.w());
+    A = A + a*(B-A);
+  } else if(B.w() < 0) {
+    float a = A.w() / (A.w() - B.w());
+    B = B + a*(B-A);
+  }
+
   // Loop through each clip plane and test if the points are within bounds
   for(uint32_t i = 0; i < 6; i++) {
-    // Mirror the coordinates on the W axis if they are behind the W=0 projection plane
-    if(A.w() < 0) A.setW(-A.w());
-    if(B.w() < 0) B.setW(-B.w());
-
     // Trivially accept the line if it is within the {x,y,z}=w plane.
     // Trivially reject the line if it is completely outside of the viewing volume
     if((A.w() > 0 && (A.w() + P[i]) >= 0) && (B.w() > 0 && (B.w() + Q[i]) >= 0)) continue;
