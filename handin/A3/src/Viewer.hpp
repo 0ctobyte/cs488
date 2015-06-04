@@ -6,13 +6,6 @@
 #include <QMatrix4x4>
 #include <QtGlobal>
 
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 1, 0))
-#include <QOpenGLBuffer>
-#include <QOpenGLVertexArrayObject>
-#else 
-#include <QGLBuffer>
-#endif
-
 class Viewer : public QGLWidget {
     
     Q_OBJECT
@@ -51,21 +44,36 @@ protected:
 
 private:
 
+    enum VBO {
+      CIRCLE,
+      SPHERE,
+    };
+
     QMatrix4x4 getCameraMatrix();
     void translateWorld(float x, float y, float z);
     void rotateWorld(float x, float y, float z);
     void scaleWorld(float x, float y, float z);
     void set_colour(const QColor& col);
+    void generate_sphere(int detailLevel);
 
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 1, 0))
-    QOpenGLBuffer mCircleBufferObject;
-    QOpenGLVertexArrayObject mVertexArrayObject;
-#else 
-    QGLBuffer mCircleBufferObject;
-#endif
+    GLuint mVAO;
+    GLuint mVBO[VBO::SPHERE+1];
+    GLuint mIBO;
+
+    int mIndexCount;
+    int mVertexCount;
     
     int mMvpMatrixLocation;
-    int mColorLocation;
+    int mMvMatrixLocation;
+    int mNormalMvMatrixLocation;
+    int mDiffuseColorLocation;
+    int mSpecularColorLocation;
+    int mShininessLocation;
+    int mCameraPositionLocation;
+    int mLightSourcePositionLocation;
+    int mLightSourceIntensityLocation;
+
+    QVector3D mCameraPosition;
 
     QMatrix4x4 mPerspMatrix;
     QMatrix4x4 mTransformMatrix;

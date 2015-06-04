@@ -27,3 +27,9 @@ SOURCES += algebra.cpp \
            scene_lua.cpp \
            AppWindow.cpp \ 
            Viewer.cpp
+
+mac {
+  INCLUDEPATH += /usr/local/include/lua5.1
+  LIBPATH += /usr/local/lib
+  QMAKE_CXXFLAGS += -Wno-gnu-array-member-paren-init
+}
