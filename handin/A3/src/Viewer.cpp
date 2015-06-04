@@ -135,8 +135,6 @@ void Viewer::initializeGL() {
     mProgram.setUniformValue(mCameraPositionLocation, mCameraPosition);
     mProgram.setUniformValue(mLightSourcePositionLocation, mCameraPosition);
     mProgram.setUniformValue(mLightSourceIntensityLocation, 1.0, 1.0, 1.0);
-
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 }
 
 void Viewer::paintGL() {
