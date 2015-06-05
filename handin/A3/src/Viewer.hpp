@@ -5,6 +5,7 @@
 #include <QGLShaderProgram>
 #include <QMatrix4x4>
 #include <QtGlobal>
+#include "scene_lua.hpp"
 
 class Viewer : public QGLWidget {
     
@@ -17,10 +18,30 @@ public:
     QSize minimumSizeHint() const;
     QSize sizeHint() const;
 
+    bool load_scene(std::string filename);
+    QGLShaderProgram& getShaderProgram() { return mProgram; }
+    QMatrix4x4 getProjectionMatrix() { return mPerspMatrix; }
+    QMatrix4x4 getCameraMatrix();
+    void drawSphere();
+
     // If you want to render a new frame, call do not call paintGL(),
     // instead, call update() to ensure that the view gets a paint 
     // event.
-  
+ 
+    enum Mode {
+      TRANSFORM,
+      JOINTS,
+    };
+
+public slots:
+    void resetPosition() { mTransformMatrix.setToIdentity(); }
+    void resetOrientation() { m_sceneRoot->set_transform(QMatrix4x4()); }
+    void resetJoints() {}
+    void resetAll() { resetPosition(); resetOrientation(); resetJoints(); }
+    void setMode(Mode mode) { mMode = mode; }
+    void undoTransform() {}
+    void redoTransform() {}
+
 protected:
 
     // Events we implement
@@ -49,7 +70,6 @@ private:
       SPHERE,
     };
 
-    QMatrix4x4 getCameraMatrix();
     void translateWorld(float x, float y, float z);
     void rotateWorld(float x, float y, float z);
     void scaleWorld(float x, float y, float z);
@@ -64,20 +84,17 @@ private:
     int mVertexCount;
     
     int mMvpMatrixLocation;
-    int mMvMatrixLocation;
-    int mNormalMvMatrixLocation;
     int mDiffuseColorLocation;
-    int mSpecularColorLocation;
-    int mShininessLocation;
-    int mCameraPositionLocation;
-    int mLightSourcePositionLocation;
-    int mLightSourceIntensityLocation;
 
     QVector3D mCameraPosition;
 
     QMatrix4x4 mPerspMatrix;
     QMatrix4x4 mTransformMatrix;
     QGLShaderProgram mProgram;
+
+    SceneNode* m_sceneRoot;
+    Mode mMode;
+    QVector2D mMouseCoord;
 };
 
 #endif

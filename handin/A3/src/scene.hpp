@@ -2,7 +2,7 @@
 #define SCENE_HPP
 
 #include <list>
-#include "algebra.hpp"
+#include <QMatrix4x4>
 #include "primitive.hpp"
 #include "material.hpp"
 
@@ -11,18 +11,18 @@ public:
   SceneNode(const std::string& name);
   virtual ~SceneNode();
 
-  virtual void walk_gl(bool picking = false) const;
+  virtual void walk_gl(Viewer* viewer, bool picking = false) const;
 
-  const Matrix4x4& get_transform() const { return m_trans; }
-  const Matrix4x4& get_inverse() const { return m_invtrans; }
+  const QMatrix4x4& get_transform() const { return m_trans; }
+  const QMatrix4x4& get_inverse() const { return m_invtrans; }
   
-  void set_transform(const Matrix4x4& m)
+  void set_transform(const QMatrix4x4& m)
   {
     m_trans = m;
-    m_invtrans = m.invert();
+    m_invtrans = m.inverted();
   }
 
-  void set_transform(const Matrix4x4& m, const Matrix4x4& i)
+  void set_transform(const QMatrix4x4& m, const QMatrix4x4& i)
   {
     m_trans = m;
     m_invtrans = i;
@@ -41,8 +41,8 @@ public:
   // Callbacks to be implemented.
   // These will be called from Lua.
   void rotate(char axis, double angle);
-  void scale(const Vector3D& amount);
-  void translate(const Vector3D& amount);
+  void scale(const QVector3D& amount);
+  void translate(const QVector3D& amount);
 
   // Returns true if and only if this node is a JointNode
   virtual bool is_joint() const;
@@ -54,8 +54,8 @@ protected:
   std::string m_name;
 
   // Transformations
-  Matrix4x4 m_trans;
-  Matrix4x4 m_invtrans;
+  QMatrix4x4 m_trans;
+  QMatrix4x4 m_invtrans;
 
   // Hierarchy
   typedef std::list<SceneNode*> ChildList;
@@ -67,7 +67,7 @@ public:
   JointNode(const std::string& name);
   virtual ~JointNode();
 
-  virtual void walk_gl(bool bicking = false) const;
+  virtual void walk_gl(Viewer* viewer, bool picking = false) const;
 
   virtual bool is_joint() const;
 
@@ -90,7 +90,7 @@ public:
                Primitive* primitive);
   virtual ~GeometryNode();
 
-  virtual void walk_gl(bool picking = false) const;
+  virtual void walk_gl(Viewer* viewer, bool picking = false) const;
 
   const Material* get_material() const;
   Material* get_material();

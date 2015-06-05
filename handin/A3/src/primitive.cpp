@@ -1,4 +1,5 @@
 #include "primitive.hpp"
+#include "Viewer.hpp"
 
 Primitive::~Primitive()
 {
@@ -8,7 +9,7 @@ Sphere::~Sphere()
 {
 }
 
-void Sphere::walk_gl(bool picking) const
+void Sphere::walk_gl(Viewer* viewer, bool picking) const
 {
-  // Fill me in
+  viewer->drawSphere();
 }

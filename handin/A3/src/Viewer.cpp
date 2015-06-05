@@ -1,10 +1,10 @@
 #include <QtWidgets>
 #include <QtOpenGL>
 #include <QTimer>
-#include "Viewer.hpp"
 #include <iostream>
 #include <math.h>
 #include <vector>
+#include "Viewer.hpp"
 
 #ifndef GL_MULTISAMPLE
 #define GL_MULTISAMPLE 0x809D
@@ -15,7 +15,10 @@ Viewer::Viewer(const QGLFormat& format, QWidget *parent)
     , mVAO(0)
     , mVBO({0, 0})
     , mIBO(0)
-    , mCameraPosition(0.0, 0.0, 2.5)
+    , mCameraPosition(0.0, 0.0, 1.0)
+    , m_sceneRoot(new SceneNode("sceneRoot"))
+    , mMode(Mode::TRANSFORM)
+    , mMouseCoord(0, 0)
 {
   QTimer *timer = new QTimer(this);
   connect(timer, SIGNAL(timeout()), this, SLOT(update()));
@@ -111,7 +114,7 @@ void Viewer::initializeGL() {
     // (normalized). So this can be generated in the shaders
     glGenBuffers(1, &mVBO[VBO::SPHERE]);
     glGenBuffers(1, &mIBO);
-    generate_sphere(5);
+    generate_sphere(3);
 
     mProgram.bind();
 
@@ -119,46 +122,35 @@ void Viewer::initializeGL() {
     mProgram.setAttributeBuffer("vert", GL_FLOAT, 0, 3);
 
     mMvpMatrixLocation = mProgram.uniformLocation("mvpMatrix");
-    mMvMatrixLocation = mProgram.uniformLocation("modelViewMatrix");
-    mNormalMvMatrixLocation = mProgram.uniformLocation("normalModelViewMatrix");
-
     mDiffuseColorLocation = mProgram.uniformLocation("material.diffuse");
-    mSpecularColorLocation = mProgram.uniformLocation("material.specular");
-    mShininessLocation = mProgram.uniformLocation("material.shininess");
-
-    mCameraPositionLocation = mProgram.uniformLocation("camera.position");
-    mLightSourcePositionLocation = mProgram.uniformLocation("lightSource.position");
-    mLightSourceIntensityLocation = mProgram.uniformLocation("lightSource.intensity");
 
     // These are static uniforms
     // The light source tracks the cameras position
-    mProgram.setUniformValue(mCameraPositionLocation, mCameraPosition);
-    mProgram.setUniformValue(mLightSourcePositionLocation, mCameraPosition);
-    mProgram.setUniformValue(mLightSourceIntensityLocation, 1.0, 1.0, 1.0);
+    mProgram.setUniformValue("camera.position", mCameraPosition);
+    mProgram.setUniformValue("lightSource.position", mCameraPosition);
+    mProgram.setUniformValue("lightSource.intensity", 1.0, 1.0, 1.0);
 }
 
 void Viewer::paintGL() {
     // Clear framebuffer
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    // Set up lighting
-
-    // Draw stuff
+    // Draw the scene
+    m_sceneRoot->walk_gl(this);
 
     //draw_trackball_circle();
-    
-    // Bind buffer object
-    typedef void (APIENTRY *_glBindBuffer) (GLenum, GLuint);
-    _glBindBuffer glBindBuffer;
-    glBindBuffer = (_glBindBuffer) QGLWidget::context()->getProcAddress("glBindBuffer");
-    glBindBuffer(GL_ARRAY_BUFFER, mVBO[VBO::SPHERE]);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mIBO);
-    mProgram.setUniformValue(mMvpMatrixLocation, mPerspMatrix * getCameraMatrix());
-    mProgram.setUniformValue(mMvMatrixLocation, getCameraMatrix());
-    mProgram.setUniformValue(mNormalMvMatrixLocation, getCameraMatrix().normalMatrix());
+}
 
-    // Draw buffer
-    glDrawElements(GL_TRIANGLES, mIndexCount, GL_UNSIGNED_INT, 0);    
+void Viewer::drawSphere() {
+  // Bind vertex and index buffer
+  typedef void (APIENTRY *_glBindBuffer) (GLenum, GLuint);
+  _glBindBuffer glBindBuffer;
+  glBindBuffer = (_glBindBuffer) QGLWidget::context()->getProcAddress("glBindBuffer");
+  glBindBuffer(GL_ARRAY_BUFFER, mVBO[VBO::SPHERE]);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mIBO);
+
+  // Draw the indices
+  glDrawElements(GL_TRIANGLES, mIndexCount, GL_UNSIGNED_INT, 0);
 }
 
 void Viewer::resizeGL(int width, int height) {
@@ -174,6 +166,9 @@ void Viewer::resizeGL(int width, int height) {
 
 void Viewer::mousePressEvent ( QMouseEvent * event ) {
     std::cerr << "Stub: button " << event->button() << " pressed\n";
+
+    mMouseCoord.setX(event->x());
+    mMouseCoord.setY(event->y());
 }
 
 void Viewer::mouseReleaseEvent ( QMouseEvent * event ) {
@@ -182,6 +177,17 @@ void Viewer::mouseReleaseEvent ( QMouseEvent * event ) {
 
 void Viewer::mouseMoveEvent ( QMouseEvent * event ) {
     std::cerr << "Stub: Motion at " << event->x() << ", " << event->y() << std::endl;
+
+    float dx = (float)(event->x() - mMouseCoord.x())/(float)abs(width());
+    float dy = (float)(mMouseCoord.y() - event->y())/(float)abs(height());
+
+    if(mMode == Mode::TRANSFORM) {
+      if(event->buttons() & Qt::LeftButton) translateWorld(dx*10.0, dy*10.0, 0);
+      if(event->buttons() & Qt::MidButton) translateWorld(0, 0, dy*10.0);
+    }
+
+    mMouseCoord.setX(event->x());
+    mMouseCoord.setY(event->y());
 }
 
 QMatrix4x4 Viewer::getCameraMatrix() {
@@ -248,7 +254,20 @@ void Viewer::draw_trackball_circle()
     glDrawArrays(GL_LINE_LOOP, 0, 40);    
 }
 
+bool Viewer::load_scene(std::string filename) {
+  // Import scene
+  SceneNode* root = import_lua(filename);
+
+  if(!root) return false;
+
+  // m_sceneRoot is a general transform node above the root of the scene
+  m_sceneRoot->add_child(root);
+
+  return true;
+}
+
 void Viewer::generate_sphere(int detailLevel) {
+  // This algorithm was derived from: http://blog.andreaskahler.com/2009/06/creating-icosphere-mesh-in-code.html
   // Generate a sphere of radius 1 starting from a icosahedron with golden ratio t
   // The triangles are then subdivided generating 4 triangles from each original triangle
   float t = (1.0 + sqrt(5.0)) / 2.0;

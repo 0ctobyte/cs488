@@ -1,12 +1,14 @@
 #ifndef CS488_MATERIAL_HPP
 #define CS488_MATERIAL_HPP
 
-#include "algebra.hpp"
+#include <QColor>
+
+class Viewer;
 
 class Material {
 public:
   virtual ~Material();
-  virtual void apply_gl() const = 0;
+  virtual void apply_gl(Viewer* viewer) const = 0;
 
 protected:
   Material()
@@ -16,14 +18,14 @@ protected:
 
 class PhongMaterial : public Material {
 public:
-  PhongMaterial(const Colour& kd, const Colour& ks, double shininess);
+  PhongMaterial(const QColor& kd, const QColor& ks, double shininess);
   virtual ~PhongMaterial();
 
-  virtual void apply_gl() const;
+  virtual void apply_gl(Viewer* viewer) const;
 
 private:
-  Colour m_kd;
-  Colour m_ks;
+  QColor m_kd;
+  QColor m_ks;
 
   double m_shininess;
 };

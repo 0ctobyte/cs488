@@ -1,27 +1,12 @@
 #include <QApplication>
 #include <QDesktopWidget>
-#include <string>
-#include <iostream>
 #include "AppWindow.hpp"
-#include "scene_lua.hpp"
 
 int main(int argc, char** argv)
 {
     QApplication app(argc, argv);
-
-    std::string filename = "puppet.lua";
-    if (argc >= 2) {
-        filename = argv[1];
-    }
-
-    // This is how you might import a scene
-    SceneNode* root = import_lua(filename);
-    if (!root) {
-        std::cerr << "Could not open " << filename << std::endl;
-        return 1;
-    }
  
-    AppWindow window;
+    AppWindow window(argc, argv);
     window.resize(window.sizeHint());
     int desktopArea = QApplication::desktop()->width() * 
                       QApplication::desktop()->height();
