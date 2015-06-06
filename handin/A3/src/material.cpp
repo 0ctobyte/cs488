@@ -22,4 +22,5 @@ void PhongMaterial::apply_gl(Viewer *viewer) const
   program.setUniformValue("material.diffuse", m_kd.redF(), m_kd.greenF(), m_kd.blueF());
   program.setUniformValue("material.specular", m_ks.redF(), m_ks.greenF(), m_ks.blueF());
   program.setUniformValue("material.shininess", (float)m_shininess);
+  program.setUniformValue("lighting_enabled", 1);
 }

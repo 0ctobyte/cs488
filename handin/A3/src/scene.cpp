@@ -64,6 +64,12 @@ void SceneNode::translate(const QVector3D& amount)
   set_transform(get_transform() * m);
 }
 
+void SceneNode::rotate(double angle, const QVector3D& axis) {
+  QMatrix4x4 m;
+  m.rotate(angle, axis);
+  set_transform(get_transform() * m);
+}
+
 bool SceneNode::is_joint() const
 {
   return false;

@@ -34,7 +34,7 @@ public:
     };
 
 public slots:
-    void resetPosition() { mTransformMatrix.setToIdentity(); }
+    void resetPosition() { mTransformMatrix.setToIdentity(); translateWorld(0.0, 0.0, -7.0); }
     void resetOrientation() { m_sceneRoot->set_transform(QMatrix4x4()); }
     void resetJoints() {}
     void resetAll() { resetPosition(); resetOrientation(); resetJoints(); }
@@ -74,6 +74,7 @@ private:
     void rotateWorld(float x, float y, float z);
     void scaleWorld(float x, float y, float z);
     void set_colour(const QColor& col);
+    QVector3D virtual_trackball(const QVector2D& P, const QVector2D& Q);
     void generate_sphere(int detailLevel);
 
     GLuint mVAO;

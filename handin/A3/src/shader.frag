@@ -18,6 +18,7 @@ struct LightSource {
 uniform Material material = Material(vec3(0.7, 0.7, 0.7), vec3(1.0, 0.0, 0.0), 80.0);
 uniform Camera camera = Camera(vec3(0.0, 0.0, 0.0));
 uniform LightSource lightSource = LightSource(vec3(0.0, 0.0, 0.0), vec3(1.0, 1.0, 1.0));
+uniform int lighting_enabled = 1;
 
 // The normals and positions are interpolated for each pixel
 smooth in vec3 o_Position;
@@ -25,7 +26,7 @@ smooth in vec3 o_Normal;
 
 out vec4 finalColor;
 
-void main()
+vec4 phong_lighting()
 {
     // Calculate vector from surface position to light source
     vec3 surf_to_light = lightSource.position - o_Position;
@@ -52,6 +53,19 @@ void main()
     // Calculate the final color based on
     // 1. The diffuse component
     // 2. The specular component
-    finalColor = vec4(diffuse+specular, 1.0);
+    return vec4(diffuse+specular, 1.0);
 }
+
+void main()
+{
+  if(lighting_enabled == 0)
+  {
+    finalColor = vec4(material.diffuse, 1.0);
+  }
+  else
+  {
+    finalColor = phong_lighting();
+  }
+}
+
 

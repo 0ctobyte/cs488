@@ -15,7 +15,7 @@ public:
 
   const QMatrix4x4& get_transform() const { return m_trans; }
   const QMatrix4x4& get_inverse() const { return m_invtrans; }
-  
+
   void set_transform(const QMatrix4x4& m)
   {
     m_trans = m;
@@ -43,6 +43,8 @@ public:
   void rotate(char axis, double angle);
   void scale(const QVector3D& amount);
   void translate(const QVector3D& amount);
+
+  void rotate(double angle, const QVector3D& axis);
 
   // Returns true if and only if this node is a JointNode
   virtual bool is_joint() const;

@@ -64,11 +64,9 @@ void Viewer::initializeGL() {
 
     float circleData[120];
 
-    double radius = width() < height() ? (float)width() * 0.25 : (float)height() * 0.25;
-        
     for(size_t i=0; i<40; ++i) {
-        circleData[i*3] = radius * cos(i*2*M_PI/40);
-        circleData[i*3 + 1] = radius * sin(i*2*M_PI/40);
+        circleData[i*3] = cos(i*2*M_PI/40);
+        circleData[i*3 + 1] = sin(i*2*M_PI/40);
         circleData[i*3 + 2] = 0.0;
     }
 
@@ -98,7 +96,6 @@ void Viewer::initializeGL() {
     glBindVertexArray(mVAO);
 
     glGenBuffers(1, &mVBO[VBO::CIRCLE]);
-
     glBindBuffer(GL_ARRAY_BUFFER, mVBO[VBO::CIRCLE]);
 
     if (mVBO[VBO::CIRCLE] == 0) {
@@ -118,9 +115,6 @@ void Viewer::initializeGL() {
 
     mProgram.bind();
 
-    mProgram.enableAttributeArray("vert");
-    mProgram.setAttributeBuffer("vert", GL_FLOAT, 0, 3);
-
     mMvpMatrixLocation = mProgram.uniformLocation("mvpMatrix");
     mDiffuseColorLocation = mProgram.uniformLocation("material.diffuse");
 
@@ -129,6 +123,9 @@ void Viewer::initializeGL() {
     mProgram.setUniformValue("camera.position", mCameraPosition);
     mProgram.setUniformValue("lightSource.position", mCameraPosition);
     mProgram.setUniformValue("lightSource.intensity", 1.0, 1.0, 1.0);
+
+    // Initial camera position
+    resetPosition();
 }
 
 void Viewer::paintGL() {
@@ -138,7 +135,7 @@ void Viewer::paintGL() {
     // Draw the scene
     m_sceneRoot->walk_gl(this);
 
-    //draw_trackball_circle();
+    draw_trackball_circle();
 }
 
 void Viewer::drawSphere() {
@@ -148,6 +145,8 @@ void Viewer::drawSphere() {
   glBindBuffer = (_glBindBuffer) QGLWidget::context()->getProcAddress("glBindBuffer");
   glBindBuffer(GL_ARRAY_BUFFER, mVBO[VBO::SPHERE]);
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mIBO);
+  mProgram.enableAttributeArray("vert");
+  mProgram.setAttributeBuffer("vert", GL_FLOAT, 0, 3);
 
   // Draw the indices
   glDrawElements(GL_TRIANGLES, mIndexCount, GL_UNSIGNED_INT, 0);
@@ -168,7 +167,7 @@ void Viewer::mousePressEvent ( QMouseEvent * event ) {
     std::cerr << "Stub: button " << event->button() << " pressed\n";
 
     mMouseCoord.setX(event->x());
-    mMouseCoord.setY(event->y());
+    mMouseCoord.setY(height() - event->y());
 }
 
 void Viewer::mouseReleaseEvent ( QMouseEvent * event ) {
@@ -179,15 +178,20 @@ void Viewer::mouseMoveEvent ( QMouseEvent * event ) {
     std::cerr << "Stub: Motion at " << event->x() << ", " << event->y() << std::endl;
 
     float dx = (float)(event->x() - mMouseCoord.x())/(float)abs(width());
-    float dy = (float)(mMouseCoord.y() - event->y())/(float)abs(height());
+    float dy = (float)((height()-event->y()) - mMouseCoord.y())/(float)abs(height());
 
     if(mMode == Mode::TRANSFORM) {
       if(event->buttons() & Qt::LeftButton) translateWorld(dx*10.0, dy*10.0, 0);
       if(event->buttons() & Qt::MidButton) translateWorld(0, 0, dy*10.0);
-    }
+
+      if(event->buttons() & Qt::RightButton) {
+        QVector3D axis = virtual_trackball(mMouseCoord, QVector2D(event->x(), height() - event->y()));
+        m_sceneRoot->rotate(axis.length() * 180.0 / M_PI, axis);
+      }
+    } 
 
     mMouseCoord.setX(event->x());
-    mMouseCoord.setY(event->y());
+    mMouseCoord.setY(height() - event->y());
 }
 
 QMatrix4x4 Viewer::getCameraMatrix() {
@@ -236,12 +240,15 @@ void Viewer::draw_trackball_circle()
 
     // Set orthographic Matrix
     QMatrix4x4 orthoMatrix;
-    orthoMatrix.ortho(0.0, (float)current_width, 
-           0.0, (float)current_height, -0.1, 0.1);
+    orthoMatrix.ortho(0.0, (float)current_width, 0.0, (float)current_height, -0.1, 0.1);
 
     // Translate the view to the middle
     QMatrix4x4 transformMatrix;
     transformMatrix.translate(width()/2.0, height()/2.0, 0.0);
+
+    // Scale the circle to have a radius r
+    double r = (width() < height()) ? 0.25*(float)width() : 0.25*(float)height();
+    transformMatrix.scale(r, r, 1);
 
     // Bind buffer object
     typedef void (APIENTRY *_glBindBuffer) (GLenum, GLuint);
@@ -249,6 +256,9 @@ void Viewer::draw_trackball_circle()
     glBindBuffer = (_glBindBuffer) QGLWidget::context()->getProcAddress("glBindBuffer");
     glBindBuffer(GL_ARRAY_BUFFER, mVBO[VBO::CIRCLE]);
     mProgram.setUniformValue(mMvpMatrixLocation, orthoMatrix * transformMatrix);
+    mProgram.setUniformValue("lighting_enabled", 0);
+    mProgram.enableAttributeArray("vert");
+    mProgram.setAttributeBuffer("vert", GL_FLOAT, 0, 3);
 
     // Draw buffer
     glDrawArrays(GL_LINE_LOOP, 0, 40);    
@@ -264,6 +274,32 @@ bool Viewer::load_scene(std::string filename) {
   m_sceneRoot->add_child(root);
 
   return true;
+}
+
+QVector3D Viewer::virtual_trackball(const QVector2D& P, const QVector2D& Q) {
+  float d = (width() > height()) ? 0.5*width() : 0.5*height();
+
+  QVector3D A ((P.x()-(float)width()/2.0) * 2.0 / d, (P.y()-(float)height()/2.0) * 2.0 / d, 0);
+  A.setZ(1.0 - A.x()*A.x() - A.y()*A.y());
+
+  if(A.z() < 0.0) {
+    float len = sqrt(1.0 - A.z());
+    A = QVector3D(A.x() / len, A.y() / len, 0.0);
+  } else {
+    A.setZ(sqrt(A.z()));
+  }
+
+  QVector3D B ((Q.x()-(float)width()/2.0) * 2.0 / d, (Q.y()-(float)height()/2.0) * 2.0 / d, 0);
+  B.setZ(1.0 - B.x()*B.x() - B.y()*B.y());
+
+  if(B.z() < 0.0) {
+    float len = sqrt(1.0 - B.z());
+    B = QVector3D(B.x() / len, B.y() / len, 0.0);
+  } else {
+    B.setZ(sqrt(B.z()));
+  }
+
+  return QVector3D::crossProduct(A, B);
 }
 
 void Viewer::generate_sphere(int detailLevel) {
