@@ -29,7 +29,7 @@ void SceneNode::walk_gl(Viewer* viewer, bool picking) const
     // will apply a scale factor that is the reciprocal of the original scale factor
     // and transposing will perserve the original rotation.
     if(child->is_joint()) {
-      child->set_transform(this->get_transform() * this->get_inverse().transposed() * T, I);
+      child->set_transform(this->get_transform() * this->get_inverse().transposed() * T * viewer->getJointRotationMatrix(), I);
     } else {
       child->set_transform(this->get_transform() * T, I);
     }

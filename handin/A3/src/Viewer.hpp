@@ -5,6 +5,7 @@
 #include <QGLShaderProgram>
 #include <QMatrix4x4>
 #include <QtGlobal>
+#include <vector>
 #include "scene_lua.hpp"
 
 class Viewer : public QGLWidget {
@@ -22,6 +23,7 @@ public:
     QGLShaderProgram& getShaderProgram() { return mProgram; }
     QMatrix4x4 getProjectionMatrix() { return mPerspMatrix; }
     QMatrix4x4 getCameraMatrix();
+    QMatrix4x4 getJointRotationMatrix() { return (mMatrixStack.size() > 0) ? mMatrixStack.back() : QMatrix4x4(); }
     void drawSphere();
 
     // If you want to render a new frame, call do not call paintGL(),
@@ -36,11 +38,21 @@ public:
 public slots:
     void resetPosition() { mTransformMatrix.setToIdentity(); translateWorld(0.0, 0.0, -7.0); }
     void resetOrientation() { m_sceneRoot->set_transform(QMatrix4x4()); }
-    void resetJoints() {}
+    void resetJoints() { mMatrixStack.clear(); mRedoMatrixStack.clear(); }
     void resetAll() { resetPosition(); resetOrientation(); resetJoints(); }
     void setMode(Mode mode) { mMode = mode; }
-    void undoTransform() {}
-    void redoTransform() {}
+    void undoTransform() { 
+      if(mMatrixStack.size() > 0) {
+        mRedoMatrixStack.push_back(mMatrixStack.back());
+        mMatrixStack.pop_back();
+      }
+    }
+    void redoTransform() { 
+      if(mRedoMatrixStack.size() > 0) {
+        mMatrixStack.push_back(mRedoMatrixStack.back());
+        mRedoMatrixStack.pop_back();
+      }
+    }
 
 protected:
 
@@ -96,6 +108,8 @@ private:
     SceneNode* m_sceneRoot;
     Mode mMode;
     QVector2D mMouseCoord;
+    std::vector<QMatrix4x4> mMatrixStack;
+    std::vector<QMatrix4x4> mRedoMatrixStack;
 };
 
 #endif

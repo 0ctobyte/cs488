@@ -168,6 +168,12 @@ void Viewer::mousePressEvent ( QMouseEvent * event ) {
 
     mMouseCoord.setX(event->x());
     mMouseCoord.setY(height() - event->y());
+
+    if(mMode == Mode::JOINTS) {
+      // Clear the redo stack and push another matrix on the stack
+      mRedoMatrixStack.clear();
+      (mMatrixStack.size() > 0) ? mMatrixStack.push_back(mMatrixStack.back()) : mMatrixStack.push_back(QMatrix4x4());
+    }
 }
 
 void Viewer::mouseReleaseEvent ( QMouseEvent * event ) {
@@ -188,7 +194,15 @@ void Viewer::mouseMoveEvent ( QMouseEvent * event ) {
         QVector3D axis = virtual_trackball(mMouseCoord, QVector2D(event->x(), height() - event->y()));
         m_sceneRoot->rotate(axis.length() * 180.0 / M_PI, axis);
       }
-    } 
+    } else if(mMode == Mode::JOINTS) {
+      if(event->buttons() & Qt::MidButton) {
+        mMatrixStack.back().rotate(dy * 180, 0.0, 1.0, 0.0);
+      }
+
+      if(event->buttons() & Qt::RightButton) {
+        mMatrixStack.back().rotate(dx * 180, 1.0, 0.0, 0.0);
+      }
+    }
 
     mMouseCoord.setX(event->x());
     mMouseCoord.setY(height() - event->y());
