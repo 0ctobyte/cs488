@@ -6,6 +6,7 @@
 #include <QMatrix4x4>
 #include <QtGlobal>
 #include <vector>
+#include <stdint.h>
 #include "scene_lua.hpp"
 
 class Viewer : public QGLWidget {
@@ -20,11 +21,18 @@ public:
     QSize sizeHint() const;
 
     bool load_scene(std::string filename);
-    QGLShaderProgram& getShaderProgram() { return mProgram; }
-    QMatrix4x4 getProjectionMatrix() { return mPerspMatrix; }
-    QMatrix4x4 getCameraMatrix();
-    QMatrix4x4 getJointRotationMatrix() { return (mMatrixStack.size() > 0) ? mMatrixStack.back() : QMatrix4x4(); }
+    void pushMatrix() { mMatrixStack.push_back((mMatrixStack.size() > 0) ? mMatrixStack.back() : QMatrix4x4()); }
+    void multMatrix(QMatrix4x4 m) { mMatrixStack[mMatrixStack.size()-1] = mMatrixStack.back() * m; }
+    void multJointMatrix() { mMatrixStack[mMatrixStack.size()-1] = mMatrixStack.back() * ((mUndoMatrixStack.size() > 0) ? mUndoMatrixStack.back() : QMatrix4x4()); } 
+    void popMatrix() { mMatrixStack.pop_back(); }
+    void setLighting(QColor diffuse, QColor specular, float shininess, bool enable_lighting) {
+      mProgram.setUniformValue("material.diffuse", diffuse.redF(), diffuse.greenF(), diffuse.blueF());
+      mProgram.setUniformValue("material.specular", specular.redF(), specular.greenF(), specular.blueF());
+      mProgram.setUniformValue("material.shininess", shininess);
+      mProgram.setUniformValue("lighting_enabled", enable_lighting);
+    }
     void drawSphere();
+    bool picker();
 
     // If you want to render a new frame, call do not call paintGL(),
     // instead, call update() to ensure that the view gets a paint 
@@ -36,20 +44,20 @@ public:
     };
 
 public slots:
-    void resetPosition() { mTransformMatrix.setToIdentity(); translateWorld(0.0, 0.0, -7.0); }
-    void resetOrientation() { m_sceneRoot->set_transform(QMatrix4x4()); }
-    void resetJoints() { mMatrixStack.clear(); mRedoMatrixStack.clear(); }
+    void resetPosition() { mTransformMatrix.setToIdentity(); }
+    void resetOrientation() { mRotationMatrix.setToIdentity(); }
+    void resetJoints() { mUndoMatrixStack.clear(); mRedoMatrixStack.clear(); }
     void resetAll() { resetPosition(); resetOrientation(); resetJoints(); }
     void setMode(Mode mode) { mMode = mode; }
     void undoTransform() { 
-      if(mMatrixStack.size() > 0) {
-        mRedoMatrixStack.push_back(mMatrixStack.back());
-        mMatrixStack.pop_back();
+      if(mUndoMatrixStack.size() > 0) {
+        mRedoMatrixStack.push_back(mUndoMatrixStack.back());
+        mUndoMatrixStack.pop_back();
       }
     }
     void redoTransform() { 
       if(mRedoMatrixStack.size() > 0) {
-        mMatrixStack.push_back(mRedoMatrixStack.back());
+        mUndoMatrixStack.push_back(mRedoMatrixStack.back());
         mRedoMatrixStack.pop_back();
       }
     }
@@ -86,6 +94,7 @@ private:
     void rotateWorld(float x, float y, float z);
     void scaleWorld(float x, float y, float z);
     void set_colour(const QColor& col);
+    QMatrix4x4 getCameraMatrix();
     QVector3D virtual_trackball(const QVector2D& P, const QVector2D& Q);
     void generate_sphere(int detailLevel);
 
@@ -93,8 +102,8 @@ private:
     GLuint mVBO[VBO::SPHERE+1];
     GLuint mIBO;
 
-    int mIndexCount;
-    int mVertexCount;
+    std::vector<float> mSphereVertices;
+    std::vector<uint32_t> mSphereIndices;
     
     int mMvpMatrixLocation;
     int mDiffuseColorLocation;
@@ -108,8 +117,10 @@ private:
     SceneNode* m_sceneRoot;
     Mode mMode;
     QVector2D mMouseCoord;
-    std::vector<QMatrix4x4> mMatrixStack;
+    std::vector<QMatrix4x4> mUndoMatrixStack;
     std::vector<QMatrix4x4> mRedoMatrixStack;
+    std::vector<QMatrix4x4> mMatrixStack;
+    QMatrix4x4 mRotationMatrix;
 };
 
 #endif

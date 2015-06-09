@@ -16,7 +16,6 @@ Viewer::Viewer(const QGLFormat& format, QWidget *parent)
     , mVBO({0, 0})
     , mIBO(0)
     , mCameraPosition(0.0, 0.0, 1.0)
-    , m_sceneRoot(new SceneNode("sceneRoot"))
     , mMode(Mode::TRANSFORM)
     , mMouseCoord(0, 0)
 {
@@ -123,9 +122,6 @@ void Viewer::initializeGL() {
     mProgram.setUniformValue("camera.position", mCameraPosition);
     mProgram.setUniformValue("lightSource.position", mCameraPosition);
     mProgram.setUniformValue("lightSource.intensity", 1.0, 1.0, 1.0);
-
-    // Initial camera position
-    resetPosition();
 }
 
 void Viewer::paintGL() {
@@ -133,7 +129,14 @@ void Viewer::paintGL() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // Draw the scene
+    QMatrix4x4 m, i;
+    m.translate(-m_sceneRoot->get_transform().column(3).toVector3D());
+    i.translate(m_sceneRoot->get_transform().column(3).toVector3D());
+    pushMatrix();
+    multMatrix(getCameraMatrix());
+    multMatrix(i * mRotationMatrix * m);
     m_sceneRoot->walk_gl(this);
+    popMatrix();
 
     draw_trackball_circle();
 }
@@ -148,8 +151,13 @@ void Viewer::drawSphere() {
   mProgram.enableAttributeArray("vert");
   mProgram.setAttributeBuffer("vert", GL_FLOAT, 0, 3);
 
+  // Set the transform matrices
+  mProgram.setUniformValue(mMvpMatrixLocation, mPerspMatrix * mMatrixStack.back());
+  mProgram.setUniformValue("modelViewMatrix", mMatrixStack.back());
+  mProgram.setUniformValue("normalModelViewMatrix", mMatrixStack.back().normalMatrix());
+
   // Draw the indices
-  glDrawElements(GL_TRIANGLES, mIndexCount, GL_UNSIGNED_INT, 0);
+  glDrawElements(GL_TRIANGLES, mSphereIndices.size(), GL_UNSIGNED_INT, 0);
 }
 
 void Viewer::resizeGL(int width, int height) {
@@ -170,9 +178,23 @@ void Viewer::mousePressEvent ( QMouseEvent * event ) {
     mMouseCoord.setY(height() - event->y());
 
     if(mMode == Mode::JOINTS) {
-      // Clear the redo stack and push another matrix on the stack
-      mRedoMatrixStack.clear();
-      (mMatrixStack.size() > 0) ? mMatrixStack.push_back(mMatrixStack.back()) : mMatrixStack.push_back(QMatrix4x4());
+      if(event->buttons() & Qt::LeftButton) {
+        // Don't multiply by the view matrix since we want the objects to be in world coordinates since the ray
+        // is in world coordinates
+        QMatrix4x4 m, i;
+        m.translate(-m_sceneRoot->get_transform().column(3).toVector3D());
+        i.translate(m_sceneRoot->get_transform().column(3).toVector3D());
+        pushMatrix();
+        multMatrix(i * mRotationMatrix * m);
+        m_sceneRoot->walk_gl(this, true);
+        popMatrix();
+      }
+
+      if((event->buttons() & Qt::MidButton) || (event->buttons() & Qt::RightButton)) {
+        // Clear the redo stack and push another matrix on the stack
+        mRedoMatrixStack.clear();
+        (mUndoMatrixStack.size() > 0) ? mUndoMatrixStack.push_back(mUndoMatrixStack.back()) : mUndoMatrixStack.push_back(QMatrix4x4());
+      }
     }
 }
 
@@ -192,15 +214,15 @@ void Viewer::mouseMoveEvent ( QMouseEvent * event ) {
 
       if(event->buttons() & Qt::RightButton) {
         QVector3D axis = virtual_trackball(mMouseCoord, QVector2D(event->x(), height() - event->y()));
-        m_sceneRoot->rotate(axis.length() * 180.0 / M_PI, axis);
+        mRotationMatrix.rotate(axis.length() * 180.0 / M_PI, axis);
       }
     } else if(mMode == Mode::JOINTS) {
       if(event->buttons() & Qt::MidButton) {
-        mMatrixStack.back().rotate(dy * 180, 0.0, 1.0, 0.0);
+        mUndoMatrixStack.back().rotate(dy * 180, 0.0, 1.0, 0.0);
       }
 
       if(event->buttons() & Qt::RightButton) {
-        mMatrixStack.back().rotate(dx * 180, 1.0, 0.0, 0.0);
+        mUndoMatrixStack.back().rotate(dx * 180, 1.0, 0.0, 0.0);
       }
     }
 
@@ -239,6 +261,59 @@ void Viewer::scaleWorld(float x, float y, float z) {
 void Viewer::set_colour(const QColor& col)
 {
   mProgram.setUniformValue(mDiffuseColorLocation, col.red(), col.green(), col.blue());
+}
+
+bool Viewer::picker() {
+  std::cout << "viewport ray: {" << mMouseCoord.x() << ", " << mMouseCoord.y() << "}" << std::endl;
+
+  // Transform ray from viewport coordinates to NDC
+  QVector2D ray_screen (2.0*mMouseCoord.x()/(float)width()-1.0, 2.0*mMouseCoord.y()/(float)height()-1.0);
+
+  // Transform ray to world space
+  QMatrix4x4 vpInverse = (mPerspMatrix * getCameraMatrix()).inverted();
+  QVector4D ray_near = vpInverse * QVector4D(ray_screen, -1.0, 1.0);
+  QVector4D ray_far = vpInverse * QVector4D(ray_screen, 1.0, 1.0);
+
+  ray_near = ray_near / ray_near.w();
+  ray_far = ray_far / ray_far.w();
+
+  QVector3D ray = (ray_far - ray_near).toVector3D().normalized();
+
+  QVector3D ray_O = -getCameraMatrix().column(3).toVector3D();
+
+  std::cout << "world ray: {" << ray.x() << ", " << ray.y() << ", " << ray.z() << "}" << std::endl;
+
+  for(size_t i = 0; i < mSphereIndices.size(); i += 3) {
+    QVector3D p0 (mSphereVertices[mSphereIndices[i]*3], mSphereVertices[mSphereIndices[i]*3+1], mSphereVertices[mSphereIndices[i]*3+2]);
+    QVector3D p1 (mSphereVertices[mSphereIndices[i+1]*3], mSphereVertices[mSphereIndices[i+1]*3+1], mSphereVertices[mSphereIndices[i+1]*3+2]);
+    QVector3D p2 (mSphereVertices[mSphereIndices[i+2]*3], mSphereVertices[mSphereIndices[i+2]*3+1], mSphereVertices[mSphereIndices[i+2]*3+2]);
+
+    p0 = mMatrixStack.back() * p0;
+    p1 = mMatrixStack.back() * p1;
+    p2 = mMatrixStack.back() * p2;
+
+    QVector3D normal = QVector3D::crossProduct(p1 - p0, p2 - p0);
+
+    // Check special case of ray contained within plane or not intersecting at all
+    if(QVector3D::dotProduct(ray, normal) == 0) {
+      if(QVector3D::dotProduct(p0 - ray_O, normal) == 0) return true;
+      else continue;
+    }
+
+    // Now find the intersection point
+    float t = (QVector3D::dotProduct(normal, p0) - QVector3D::dotProduct(normal, ray_O)) / QVector3D::dotProduct(normal, ray);
+    QVector3D intersect = ray_O + t*ray;
+
+    // Determine if the intersection point is within the triangle
+    if(QVector3D::dotProduct(QVector3D::crossProduct(p1-p0, intersect-p0), normal) < 0) continue;
+    if(QVector3D::dotProduct(QVector3D::crossProduct(p2-p1, intersect-p1), normal) < 0) continue;
+    if(QVector3D::dotProduct(QVector3D::crossProduct(p0-p2, intersect-p2), normal) < 0) continue;
+
+    // Otherwise it is within the triangle and the ray intersects the triangle
+    return true;
+  }
+
+  return false;
 }
 
 void Viewer::draw_trackball_circle()
@@ -285,7 +360,7 @@ bool Viewer::load_scene(std::string filename) {
   if(!root) return false;
 
   // m_sceneRoot is a general transform node above the root of the scene
-  m_sceneRoot->add_child(root);
+  m_sceneRoot = root;
 
   return true;
 }
@@ -368,15 +443,14 @@ void Viewer::generate_sphere(int detailLevel) {
     icosahedronVertices[i+2] = v.z();
   }
 
-  // Place generated vertices and indices in these vectors
-  std::vector<float> sphereVertices (36, 0);
-  std::vector<unsigned int> sphereIndices (60, 0);
+  mSphereVertices.resize(36, 0);
+  mSphereIndices.resize(60, 0);
 
   // Copy in icosahedron data
-  float* vData = sphereVertices.data();
+  float* vData = mSphereVertices.data();
   memcpy(vData, icosahedronVertices, 36*sizeof(float));
 
-  unsigned int *iData = sphereIndices.data();
+  unsigned int *iData = mSphereIndices.data();
   memcpy(iData, icosahedronIndices, 60*sizeof(unsigned int));
 
   // For each triple of indices, get the vertices (3 float triples)
@@ -387,10 +461,10 @@ void Viewer::generate_sphere(int detailLevel) {
   for(int i = 0; i < detailLevel; i++) {
     std::vector<float> genVerts;
     std::vector<unsigned int> genIndices;
-    for(size_t i = 0; i < sphereIndices.size(); i += 3) {
-      QVector3D p1 (sphereVertices[sphereIndices[i]*3], sphereVertices[sphereIndices[i]*3+1], sphereVertices[sphereIndices[i]*3+2]);
-      QVector3D p2 (sphereVertices[sphereIndices[i+1]*3], sphereVertices[sphereIndices[i+1]*3+1], sphereVertices[sphereIndices[i+1]*3+2]);
-      QVector3D p3 (sphereVertices[sphereIndices[i+2]*3], sphereVertices[sphereIndices[i+2]*3+1], sphereVertices[sphereIndices[i+2]*3+2]);
+    for(size_t i = 0; i < mSphereIndices.size(); i += 3) {
+      QVector3D p1 (mSphereVertices[mSphereIndices[i]*3], mSphereVertices[mSphereIndices[i]*3+1], mSphereVertices[mSphereIndices[i]*3+2]);
+      QVector3D p2 (mSphereVertices[mSphereIndices[i+1]*3], mSphereVertices[mSphereIndices[i+1]*3+1], mSphereVertices[mSphereIndices[i+1]*3+2]);
+      QVector3D p3 (mSphereVertices[mSphereIndices[i+2]*3], mSphereVertices[mSphereIndices[i+2]*3+1], mSphereVertices[mSphereIndices[i+2]*3+2]);
 
       QVector3D a = ((p1 + p2) / 2.0).normalized();
       QVector3D b = ((p2 + p3) / 2.0).normalized();
@@ -410,13 +484,10 @@ void Viewer::generate_sphere(int detailLevel) {
     }
 
     // Swap the vectors
-    sphereVertices.swap(genVerts);
-    sphereIndices.swap(genIndices);
+    mSphereVertices.swap(genVerts);
+    mSphereIndices.swap(genIndices);
   }
 
-  // Update the index and vertex counts
-  mIndexCount = sphereIndices.size();
-  mVertexCount = sphereVertices.size();
   
   // Upload the sphere data to the GPU
   // Have to get function pointers for these functions as well -_-
@@ -436,7 +507,7 @@ void Viewer::generate_sphere(int detailLevel) {
     return;
   }
 
-  glBufferData(GL_ARRAY_BUFFER, mVertexCount * sizeof(float), sphereVertices.data(), GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, mSphereVertices.size() * sizeof(float), mSphereVertices.data(), GL_STATIC_DRAW);
 
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mIBO);
 
@@ -445,5 +516,5 @@ void Viewer::generate_sphere(int detailLevel) {
     return;
   }
 
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, mIndexCount * sizeof(unsigned int), sphereIndices.data(), GL_STATIC_DRAW);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, mSphereIndices.size() * sizeof(unsigned int), mSphereIndices.data(), GL_STATIC_DRAW);
 }

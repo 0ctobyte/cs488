@@ -4,6 +4,7 @@
 
 SceneNode::SceneNode(const std::string& name)
   : m_name(name)
+  , m_selected(false)
 {
 }
 
@@ -11,32 +12,15 @@ SceneNode::~SceneNode()
 {
 }
 
-void SceneNode::walk_gl(Viewer* viewer, bool picking) const
+void SceneNode::walk_gl(Viewer* viewer, bool picking)
 {
-  // Loop through each child, set the transformation by premultiplying this (parent) 
-  // transformation with that of the child. Then call walk_gl for that child. Reset
-  // the childs matrix after. The original inverse matrix is not changed throughout of all of 
-  // this since it may be needed to invert a transformation on the children and we
-  // don't want an inverted projection matrix because that doesn't make sense.
+  viewer->pushMatrix();
+  viewer->multMatrix(get_transform());
+  if(is_joint()) viewer->multJointMatrix();
   for(auto child : m_children) {
-    QMatrix4x4 T = child->get_transform();
-    QMatrix4x4 I = child->get_inverse();
-
-    // If the child is a joint, then we must remove the scale factor from the matrix
-    // but perserve the translations and rotations. To do this we simply take the
-    // transpose of the inverse of the transformation matrix. It is known that the
-    // inverse of any rotation matrix is its transpose. Thus inverting the matrix
-    // will apply a scale factor that is the reciprocal of the original scale factor
-    // and transposing will perserve the original rotation.
-    if(child->is_joint()) {
-      child->set_transform(this->get_transform() * this->get_inverse().transposed() * T * viewer->getJointRotationMatrix(), I);
-    } else {
-      child->set_transform(this->get_transform() * T, I);
-    }
-
     child->walk_gl(viewer, picking);
-    child->set_transform(T, I);
   }
+  viewer->popMatrix();
 }
 
 void SceneNode::rotate(char axis, double angle)
@@ -84,7 +68,7 @@ JointNode::~JointNode()
 {
 }
 
-void JointNode::walk_gl(Viewer* viewer, bool picking) const
+void JointNode::walk_gl(Viewer* viewer, bool picking)
 {
   // Walk the children of this node
   SceneNode::walk_gl(viewer, picking);
@@ -119,19 +103,30 @@ GeometryNode::~GeometryNode()
 {
 }
 
-void GeometryNode::walk_gl(Viewer* viewer, bool picking) const
+void GeometryNode::walk_gl(Viewer* viewer, bool picking)
 {
   // Walk the children of this node
-  SceneNode::walk_gl(viewer, picking);
+  viewer->pushMatrix();
+  viewer->multMatrix(get_transform());
+  for(auto child : m_children) {
+    child->walk_gl(viewer, picking);
+  }
 
-  // Set the transform matrices
-  QGLShaderProgram& program = viewer->getShaderProgram();
-  program.setUniformValue("mvpMatrix", viewer->getProjectionMatrix() * viewer->getCameraMatrix() * get_transform());
-  program.setUniformValue("modelViewMatrix", viewer->getCameraMatrix() * get_transform());
-  program.setUniformValue("normalModelViewMatrix", (viewer->getCameraMatrix() * get_transform()).normalMatrix());
+  if(!picking) {
+    // Apply the material and draw the geometry
+    m_material->apply_gl(viewer);
+    m_primitive->walk_gl(viewer, picking);
 
-  // Draw the geometry
-  m_material->apply_gl(viewer);
-  m_primitive->walk_gl(viewer, picking);
+    // Draw the mesh on top if selected
+    if(m_selected) {
+      glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+      viewer->setLighting(QColor(0, 0, 0), QColor(0, 0, 0), 0, false);
+      m_primitive->walk_gl(viewer, picking);
+      glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    }
+  } else {
+    toggle_selected(viewer->picker());
+  }
+  viewer->popMatrix();
 }
  

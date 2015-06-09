@@ -11,7 +11,7 @@ public:
   SceneNode(const std::string& name);
   virtual ~SceneNode();
 
-  virtual void walk_gl(Viewer* viewer, bool picking = false) const;
+  virtual void walk_gl(Viewer* viewer, bool picking = false);
 
   const QMatrix4x4& get_transform() const { return m_trans; }
   const QMatrix4x4& get_inverse() const { return m_invtrans; }
@@ -48,6 +48,8 @@ public:
 
   // Returns true if and only if this node is a JointNode
   virtual bool is_joint() const;
+
+  void toggle_selected(bool picked) { if(picked) m_selected = !m_selected; }
   
 protected:
   
@@ -62,6 +64,8 @@ protected:
   // Hierarchy
   typedef std::list<SceneNode*> ChildList;
   ChildList m_children;
+
+  bool m_selected;
 };
 
 class JointNode : public SceneNode {
@@ -69,7 +73,7 @@ public:
   JointNode(const std::string& name);
   virtual ~JointNode();
 
-  virtual void walk_gl(Viewer* viewer, bool picking = false) const;
+  virtual void walk_gl(Viewer* viewer, bool picking = false);
 
   virtual bool is_joint() const;
 
@@ -92,7 +96,7 @@ public:
                Primitive* primitive);
   virtual ~GeometryNode();
 
-  virtual void walk_gl(Viewer* viewer, bool picking = false) const;
+  virtual void walk_gl(Viewer* viewer, bool picking = false);
 
   const Material* get_material() const;
   Material* get_material();
