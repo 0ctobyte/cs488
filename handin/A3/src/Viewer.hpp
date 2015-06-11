@@ -42,12 +42,20 @@ public:
       JOINTS,
     };
 
+    enum Option {
+      DRAW_TRACKBALL,
+      ZBUFFER,
+      BACKFACE_CULL,
+      FRONTFACE_CULL,
+    };
+
 public slots:
     void resetPosition() { mTransformMatrix.setToIdentity(); }
     void resetOrientation() { mRotationMatrix.setToIdentity(); }
     void resetJoints() { m_sceneRoot->clear_joint_rotation(); }
     void resetAll() { resetPosition(); resetOrientation(); resetJoints(); }
     void setMode(Mode mode) { mMode = mode; }
+    void setOption(Option option, bool enabled);
     void undoTransform() { m_sceneRoot->undo_joint_rotation(); }
     void redoTransform() { m_sceneRoot->redo_joint_rotation(); }
 
@@ -113,6 +121,7 @@ private:
 
     SceneNode* m_sceneRoot;
     Mode mMode;
+    bool mDrawTrackball;
     QVector2D mMouseCoord;
     std::vector<QMatrix4x4> mMatrixStack;
     QMatrix4x4 mRotationMatrix;

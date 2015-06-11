@@ -18,6 +18,7 @@ public:
 
 private slots:
     void setMode(QAction* action) { m_viewer->setMode((Viewer::Mode)action->data().toInt()); }
+    void setOption(QAction* action) { m_viewer->setOption((Viewer::Option)action->data().toInt(), action->isChecked()); }
 
 private:
     void createActions();
@@ -27,10 +28,12 @@ private:
     QMenu* m_menu_app;
     QMenu* m_menu_mode;
     QMenu* m_menu_edit;
+    QMenu* m_menu_option;
 
     std::vector<QAction*> m_menu_app_actions;
     std::vector<QAction*> m_menu_mode_actions;
     std::vector<QAction*> m_menu_edit_actions;
+    std::vector<QAction*> m_menu_option_actions;
     Viewer* m_viewer;
 };
 

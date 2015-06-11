@@ -56,6 +56,21 @@ void AppWindow::createActions() {
     QAction* undoAct = new QAction(tr("&Undo"), this);
     QAction* redoAct = new QAction(tr("&Redo"), this);
 
+    QActionGroup* optionActions = new QActionGroup(this);
+    optionActions->setExclusive(false);
+    QAction* drawTrackballAct = new QAction(tr("&Circle"), this);
+    drawTrackballAct->setCheckable(true);
+    drawTrackballAct->setData(Viewer::Option::DRAW_TRACKBALL);
+    QAction* zBufferAct = new QAction(tr("&Z-buffer"), this);
+    zBufferAct->setCheckable(true);
+    zBufferAct->setData(Viewer::Option::ZBUFFER);
+    QAction* backfaceCullAct = new QAction(tr("&Backface cull"), this);
+    backfaceCullAct->setCheckable(true);
+    backfaceCullAct->setData(Viewer::Option::BACKFACE_CULL);
+    QAction* frontfaceCullAct = new QAction(tr("&FrontfaceCull"), this);
+    frontfaceCullAct->setCheckable(true);
+    frontfaceCullAct->setData(Viewer::Option::FRONTFACE_CULL);
+
     // We set the accelerator keys
     // Alternatively, you could use: setShortcuts(Qt::CTRL + Qt::Key_P); 
     resetPositionAct->setShortcuts(QList<QKeySequence>() << QKeySequence(Qt::Key_I) << QKeySequence(Qt::SHIFT + Qt::Key_I));
@@ -70,6 +85,11 @@ void AppWindow::createActions() {
     undoAct->setShortcuts(QList<QKeySequence>() << QKeySequence(Qt::Key_U) << QKeySequence(Qt::SHIFT + Qt::Key_U));
     redoAct->setShortcuts(QList<QKeySequence>() << QKeySequence(Qt::Key_R) << QKeySequence(Qt::SHIFT + Qt::Key_R));
 
+    drawTrackballAct->setShortcuts(QList<QKeySequence>() << QKeySequence(Qt::Key_C) << QKeySequence(Qt::SHIFT + Qt::Key_C));
+    zBufferAct->setShortcuts(QList<QKeySequence>() << QKeySequence(Qt::Key_Z) << QKeySequence(Qt::SHIFT + Qt::Key_Z));
+    backfaceCullAct->setShortcuts(QList<QKeySequence>() << QKeySequence(Qt::Key_B) << QKeySequence(Qt::SHIFT + Qt::Key_B));
+    frontfaceCullAct->setShortcuts(QList<QKeySequence>() << QKeySequence(Qt::Key_F) << QKeySequence(Qt::SHIFT + Qt::Key_F));
+
     // Set the tip
     resetPositionAct->setStatusTip(tr("Reset the origin of the puppet to its initial position"));
     resetOrientationAct->setStatusTip(tr("Reset the puppet to its initial orientation"));
@@ -82,6 +102,11 @@ void AppWindow::createActions() {
 
     undoAct->setStatusTip(tr("Undo the previous transformation on the undo/redo stack"));
     redoAct->setStatusTip(tr("Redo the previous transformation on the undo/redo stack"));
+
+    drawTrackballAct->setStatusTip(tr("Draw the circle for the virtual trackball"));
+    zBufferAct->setStatusTip(tr("Draw with OpenGL Z buffer enabled"));
+    backfaceCullAct->setStatusTip(tr("Draw with backfacing polygons removed"));
+    frontfaceCullAct->setStatusTip(tr("Draw with frontfacing polygons removed"));
 
     // Connect the action with the signal and slot designated
     connect(resetPositionAct, SIGNAL(triggered()), m_viewer, SLOT(resetPosition()));
@@ -105,6 +130,11 @@ void AppWindow::createActions() {
 
     m_menu_edit_actions.push_back(undoAct);
     m_menu_edit_actions.push_back(redoAct);
+
+    m_menu_option_actions.push_back(optionActions->addAction(drawTrackballAct));
+    m_menu_option_actions.push_back(optionActions->addAction(zBufferAct));
+    m_menu_option_actions.push_back(optionActions->addAction(backfaceCullAct));
+    m_menu_option_actions.push_back(optionActions->addAction(frontfaceCullAct));
 }
 
 void AppWindow::createMenu() {
@@ -115,6 +145,7 @@ void AppWindow::createMenu() {
     m_menu_app = menuBar()->addMenu(tr("&Application"));
     m_menu_mode = menuBar()->addMenu(tr("&Mode"));
     m_menu_edit = menuBar()->addMenu(tr("&Edit"));
+    m_menu_option = menuBar()->addMenu(tr("&Option"));
 
     for (auto& action : m_menu_app_actions) {
       m_menu_app->addAction(action);
@@ -127,7 +158,11 @@ void AppWindow::createMenu() {
     for(auto& action : m_menu_edit_actions) {
       m_menu_edit->addAction(action);
     }
-
     connect(m_menu_mode, SIGNAL(triggered(QAction*)), this, SLOT(setMode(QAction*)));
+
+    for(auto& action : m_menu_option_actions) {
+      m_menu_option->addAction(action);
+    }
+    connect(m_menu_option, SIGNAL(triggered(QAction*)), this, SLOT(setOption(QAction*)));
 }
 

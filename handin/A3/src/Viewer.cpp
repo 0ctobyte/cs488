@@ -16,6 +16,7 @@ Viewer::Viewer(const QGLFormat& format, QWidget *parent)
     , mVBO({0, 0})
     , mIBO(0)
     , mMode(Mode::TRANSFORM)
+    , mDrawTrackball(false)
     , mMouseCoord(0, 0)
 {
   QTimer *timer = new QTimer(this);
@@ -35,6 +36,31 @@ QSize Viewer::sizeHint() const {
     return QSize(300, 300);
 }
 
+void Viewer::setOption(Option option, bool enabled) {
+  int mode;
+  switch(option) {
+  case DRAW_TRACKBALL:
+    mDrawTrackball  = enabled;
+    break;
+  case ZBUFFER:
+    if(enabled) glEnable(GL_DEPTH_TEST);
+    else glDisable(GL_DEPTH_TEST);
+    break;
+  case BACKFACE_CULL:
+    glGetIntegerv(GL_CULL_FACE_MODE, &mode);
+    if(enabled) { glEnable(GL_CULL_FACE); glCullFace(GL_BACK); }
+    else { glDisable(GL_CULL_FACE); } 
+    break;
+  case FRONTFACE_CULL:
+    glGetIntegerv(GL_CULL_FACE_MODE, &mode);
+    if(enabled) { glEnable(GL_CULL_FACE); glCullFace(GL_FRONT); }
+    else { glDisable(GL_CULL_FACE); } 
+    break;
+  default:
+    break;
+  }
+}
+
 void Viewer::initializeGL() {
     QGLFormat glFormat = QGLWidget::format();
     if (!glFormat.sampleBuffers()) {
@@ -43,7 +69,8 @@ void Viewer::initializeGL() {
     }
 
     glClearColor( 0.4, 0.4, 0.4, 0.0 );
-    glEnable(GL_DEPTH_TEST);
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_CULL_FACE);
     
     if (!mProgram.addShaderFromSourceFile(QGLShader::Vertex, "shader.vert")) {
         std::cerr << "Cannot load vertex shader." << std::endl;
@@ -143,7 +170,7 @@ void Viewer::paintGL() {
     m_sceneRoot->walk_gl(this);
     popMatrix();
 
-    draw_trackball_circle();
+    if(mDrawTrackball) draw_trackball_circle();
 }
 
 void Viewer::drawSphere() {
