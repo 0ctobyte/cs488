@@ -67,7 +67,7 @@ void AppWindow::createActions() {
     QAction* backfaceCullAct = new QAction(tr("&Backface cull"), this);
     backfaceCullAct->setCheckable(true);
     backfaceCullAct->setData(Viewer::Option::BACKFACE_CULL);
-    QAction* frontfaceCullAct = new QAction(tr("&FrontfaceCull"), this);
+    QAction* frontfaceCullAct = new QAction(tr("&Frontface cull"), this);
     frontfaceCullAct->setCheckable(true);
     frontfaceCullAct->setData(Viewer::Option::FRONTFACE_CULL);
 
