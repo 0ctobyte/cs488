@@ -49,7 +49,16 @@ public:
   // Returns true if and only if this node is a JointNode
   virtual bool is_joint() const;
 
+  // Propagate joint rotations through the hierarchy
+  virtual void clear_joint_rotation();
+  virtual void push_joint_rotation();
+  virtual void undo_joint_rotation();
+  virtual void redo_joint_rotation();
+  virtual void apply_joint_rotation(float x_rot, float y_rot);
+
   void toggle_selected(bool picked) { if(picked) m_selected = !m_selected; }
+  bool is_selected() { return m_selected; }
+  virtual bool is_picked(Viewer *viewer) { return false; }
   
 protected:
   
@@ -80,20 +89,31 @@ public:
   void set_joint_x(double min, double init, double max);
   void set_joint_y(double min, double init, double max);
 
+  virtual void clear_joint_rotation();
+  virtual void push_joint_rotation();
+  virtual void undo_joint_rotation();
+  virtual void redo_joint_rotation();
+  virtual void apply_joint_rotation(float x_rot, float y_rot);
+
   struct JointRange {
     double min, init, max;
   };
 
+  struct JointAngles {
+    double x_rot, y_rot;
+  };
   
 protected:
 
   JointRange m_joint_x, m_joint_y;
+  
+  std::vector<JointAngles> m_undo_stack;
+  std::vector<JointAngles> m_redo_stack;
 };
 
 class GeometryNode : public SceneNode {
 public:
-  GeometryNode(const std::string& name,
-               Primitive* primitive);
+  GeometryNode(const std::string& name, Primitive* primitive);
   virtual ~GeometryNode();
 
   virtual void walk_gl(Viewer* viewer, bool picking = false);
@@ -105,6 +125,8 @@ public:
   {
     m_material = material;
   }
+
+  virtual bool is_picked(Viewer *viewer);
 
 protected:
   Material* m_material;

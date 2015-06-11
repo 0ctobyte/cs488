@@ -15,7 +15,6 @@ Viewer::Viewer(const QGLFormat& format, QWidget *parent)
     , mVAO(0)
     , mVBO({0, 0})
     , mIBO(0)
-    , mCameraPosition(0.0, 0.0, 1.0)
     , mMode(Mode::TRANSFORM)
     , mMouseCoord(0, 0)
 {
@@ -115,13 +114,19 @@ void Viewer::initializeGL() {
     mProgram.bind();
 
     mMvpMatrixLocation = mProgram.uniformLocation("mvpMatrix");
+    mModelViewMatrixLocation = mProgram.uniformLocation("modelViewMatrix");
+    mNormalModelViewMatrixLocation = mProgram.uniformLocation("normalModelViewMatrix");
     mDiffuseColorLocation = mProgram.uniformLocation("material.diffuse");
+    mSpecularColorLocation = mProgram.uniformLocation("material.specular");
+    mShininessLocation = mProgram.uniformLocation("material.shininess");
+    mCameraPositionLocation = mProgram.uniformLocation("camera.position");
+    mLightSourcePositionLocation = mProgram.uniformLocation("lightSource.position");
+    mLightSourceIntensityLocation = mProgram.uniformLocation("lightSource.intensity");
+    mLightingEnabledLocation = mProgram.uniformLocation("lighting_enabled");
 
     // These are static uniforms
-    // The light source tracks the cameras position
-    mProgram.setUniformValue("camera.position", mCameraPosition);
-    mProgram.setUniformValue("lightSource.position", mCameraPosition);
-    mProgram.setUniformValue("lightSource.intensity", 1.0, 1.0, 1.0);
+    mProgram.setUniformValue(mLightSourcePositionLocation, QVector3D(0, 0, 0));
+    mProgram.setUniformValue(mLightSourceIntensityLocation, 1.0, 1.0, 1.0);
 }
 
 void Viewer::paintGL() {
@@ -151,10 +156,14 @@ void Viewer::drawSphere() {
   mProgram.enableAttributeArray("vert");
   mProgram.setAttributeBuffer("vert", GL_FLOAT, 0, 3);
 
+  // Set camera and light position. The light tracks the camera
+  mProgram.setUniformValue(mCameraPositionLocation, -getCameraMatrix().column(3).toVector3D());
+  mProgram.setUniformValue(mLightSourcePositionLocation, -getCameraMatrix().column(3).toVector3D());
+
   // Set the transform matrices
   mProgram.setUniformValue(mMvpMatrixLocation, mPerspMatrix * mMatrixStack.back());
-  mProgram.setUniformValue("modelViewMatrix", mMatrixStack.back());
-  mProgram.setUniformValue("normalModelViewMatrix", mMatrixStack.back().normalMatrix());
+  mProgram.setUniformValue(mModelViewMatrixLocation, mMatrixStack.back());
+  mProgram.setUniformValue(mNormalModelViewMatrixLocation, mMatrixStack.back().normalMatrix());
 
   // Draw the indices
   glDrawElements(GL_TRIANGLES, mSphereIndices.size(), GL_UNSIGNED_INT, 0);
@@ -191,9 +200,7 @@ void Viewer::mousePressEvent ( QMouseEvent * event ) {
       }
 
       if((event->buttons() & Qt::MidButton) || (event->buttons() & Qt::RightButton)) {
-        // Clear the redo stack and push another matrix on the stack
-        mRedoMatrixStack.clear();
-        (mUndoMatrixStack.size() > 0) ? mUndoMatrixStack.push_back(mUndoMatrixStack.back()) : mUndoMatrixStack.push_back(QMatrix4x4());
+        m_sceneRoot->push_joint_rotation();
       }
     }
 }
@@ -217,13 +224,17 @@ void Viewer::mouseMoveEvent ( QMouseEvent * event ) {
         mRotationMatrix.rotate(axis.length() * 180.0 / M_PI, axis);
       }
     } else if(mMode == Mode::JOINTS) {
+      float x_rot = 0, y_rot = 0;
+
       if(event->buttons() & Qt::MidButton) {
-        mUndoMatrixStack.back().rotate(dy * 180, 0.0, 1.0, 0.0);
+        y_rot = dx * 180.0;
       }
 
       if(event->buttons() & Qt::RightButton) {
-        mUndoMatrixStack.back().rotate(dx * 180, 1.0, 0.0, 0.0);
+        x_rot = dy * 180.0;
       }
+
+      m_sceneRoot->apply_joint_rotation(x_rot, y_rot);
     }
 
     mMouseCoord.setX(event->x());
@@ -235,7 +246,7 @@ QMatrix4x4 Viewer::getCameraMatrix() {
     QMatrix4x4 vMatrix;
 
     QMatrix4x4 cameraTransformation;
-    QVector3D cameraPosition = cameraTransformation * mCameraPosition;
+    QVector3D cameraPosition = cameraTransformation * QVector3D(0, 0, 1);
     QVector3D cameraUpDirection = cameraTransformation * QVector3D(0, 1, 0);
 
     vMatrix.lookAt(cameraPosition, QVector3D(0, 0, 0), cameraUpDirection);
@@ -345,7 +356,7 @@ void Viewer::draw_trackball_circle()
     glBindBuffer = (_glBindBuffer) QGLWidget::context()->getProcAddress("glBindBuffer");
     glBindBuffer(GL_ARRAY_BUFFER, mVBO[VBO::CIRCLE]);
     mProgram.setUniformValue(mMvpMatrixLocation, orthoMatrix * transformMatrix);
-    mProgram.setUniformValue("lighting_enabled", 0);
+    mProgram.setUniformValue(mLightingEnabledLocation, 0);
     mProgram.enableAttributeArray("vert");
     mProgram.setAttributeBuffer("vert", GL_FLOAT, 0, 3);
 

@@ -287,42 +287,36 @@ bool Viewer::clipLine(QVector4D& A, QVector4D& B) {
   float P[6] = {A.x(), -A.x(), A.y(), -A.y(), A.z(), -A.z()};
   float Q[6] = {B.x(), -B.x(), B.y(), -B.y(), B.z(), -B.z()};
 
-  // If any of the points are behind the W=0 plane, find their intersection with the W=1 plane
-  if(A.w() < 0 && B.w() < 0) {
+  // If any of the points are behind the W=0 plane, find their intersection with the W=0.00001 plane
+  if(A.w() < 0.00001 && B.w() < 0.00001) {
     return true;
-  } else if(A.w() < 0) {
-    float a = (A.w() - 1) / (A.w() - B.w());
+  } else if(A.w() < 0.00001) {
+    float a = (A.w() - 0.00001) / (A.w() - B.w());
     A = A + a*(B-A);
-  } else if(B.w() < 0) {
-    float a = (A.w() - 1) / (A.w() - B.w());
-    B = B + a*(B-A);
+  } else if(B.w() < 0.00001) {
+    float a = (A.w() - 0.00001) / (A.w() - B.w());
+    B = A + a*(B-A);
   }
   
   // Loop through each clip plane and test if the points are within bounds
   for(uint32_t i = 0; i < 6; i++) {
     // Trivially accept the line if it is within the {x,y,z}=w plane.
     // Trivially reject the line if it is completely outside of the viewing volume
-    if((A.w() > 0 && (A.w() + P[i]) >= 0) && (B.w() > 0 && (B.w() + Q[i]) >= 0)) continue;
-    else if((A.w() > 0 && (A.w() + P[i]) < 0) && (B.w() > 0 && (B.w() + Q[i]) < 0)) return true;
-    else if((A.w() < 0 && (A.w() + P[i]) > 0) || (B.w() < 0 && (B.w() + Q[i]) > 0)) return true;
+    if((A.w() + P[i]) >= 0 && (B.w() + Q[i]) >= 0) continue;
+    else if((A.w() + P[i]) < 0 && (B.w() + Q[i]) < 0) return true;
 
     // Use the parametric equation of a line intersecting with a plane to find parameter a
     // This is the distance from point A to the intersection of the plane
     float a = (A.w() + P[i]) / ((A.w() + P[i]) - (B.w() + Q[i]));
 
     // Use the parametric line equation to find the intersect point
-    if(A.w() > 0 && (A.w() + P[i]) < 0) {
+    if((A.w() + P[i]) < 0) {
       A = A + a*(B-A);
     } else {
       B = A + a*(B-A);
     }
   }
  
-  // Ughhh, corrections? I mean shit doesn't clip perfectly so this hack clamps the points to
-  // the planes
-  A.setY((A.y() > A.w()) ? A.w() : ((A.y() < -A.w()) ? -A.w() : A.y()));
-  B.setY((B.y() > B.w()) ? B.w() : ((B.y() < -B.w()) ? -B.w() : B.y()));
-
   return false;
 } 
 

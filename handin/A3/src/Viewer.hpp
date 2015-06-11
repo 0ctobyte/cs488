@@ -23,7 +23,6 @@ public:
     bool load_scene(std::string filename);
     void pushMatrix() { mMatrixStack.push_back((mMatrixStack.size() > 0) ? mMatrixStack.back() : QMatrix4x4()); }
     void multMatrix(QMatrix4x4 m) { mMatrixStack[mMatrixStack.size()-1] = mMatrixStack.back() * m; }
-    void multJointMatrix() { mMatrixStack[mMatrixStack.size()-1] = mMatrixStack.back() * ((mUndoMatrixStack.size() > 0) ? mUndoMatrixStack.back() : QMatrix4x4()); } 
     void popMatrix() { mMatrixStack.pop_back(); }
     void setLighting(QColor diffuse, QColor specular, float shininess, bool enable_lighting) {
       mProgram.setUniformValue("material.diffuse", diffuse.redF(), diffuse.greenF(), diffuse.blueF());
@@ -46,21 +45,11 @@ public:
 public slots:
     void resetPosition() { mTransformMatrix.setToIdentity(); }
     void resetOrientation() { mRotationMatrix.setToIdentity(); }
-    void resetJoints() { mUndoMatrixStack.clear(); mRedoMatrixStack.clear(); }
+    void resetJoints() { m_sceneRoot->clear_joint_rotation(); }
     void resetAll() { resetPosition(); resetOrientation(); resetJoints(); }
     void setMode(Mode mode) { mMode = mode; }
-    void undoTransform() { 
-      if(mUndoMatrixStack.size() > 0) {
-        mRedoMatrixStack.push_back(mUndoMatrixStack.back());
-        mUndoMatrixStack.pop_back();
-      }
-    }
-    void redoTransform() { 
-      if(mRedoMatrixStack.size() > 0) {
-        mUndoMatrixStack.push_back(mRedoMatrixStack.back());
-        mRedoMatrixStack.pop_back();
-      }
-    }
+    void undoTransform() { m_sceneRoot->undo_joint_rotation(); }
+    void redoTransform() { m_sceneRoot->redo_joint_rotation(); }
 
 protected:
 
@@ -106,7 +95,15 @@ private:
     std::vector<uint32_t> mSphereIndices;
     
     int mMvpMatrixLocation;
+    int mModelViewMatrixLocation;
+    int mNormalModelViewMatrixLocation;
     int mDiffuseColorLocation;
+    int mSpecularColorLocation;
+    int mShininessLocation;
+    int mCameraPositionLocation;
+    int mLightSourcePositionLocation;
+    int mLightSourceIntensityLocation;
+    int mLightingEnabledLocation;
 
     QVector3D mCameraPosition;
 
@@ -117,8 +114,6 @@ private:
     SceneNode* m_sceneRoot;
     Mode mMode;
     QVector2D mMouseCoord;
-    std::vector<QMatrix4x4> mUndoMatrixStack;
-    std::vector<QMatrix4x4> mRedoMatrixStack;
     std::vector<QMatrix4x4> mMatrixStack;
     QMatrix4x4 mRotationMatrix;
 };
