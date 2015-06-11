@@ -208,8 +208,6 @@ void Viewer::resizeGL(int width, int height) {
 }
 
 void Viewer::mousePressEvent ( QMouseEvent * event ) {
-    std::cerr << "Stub: button " << event->button() << " pressed\n";
-
     mMouseCoord.setX(event->x());
     mMouseCoord.setY(height() - event->y());
 
@@ -233,12 +231,9 @@ void Viewer::mousePressEvent ( QMouseEvent * event ) {
 }
 
 void Viewer::mouseReleaseEvent ( QMouseEvent * event ) {
-    std::cerr << "Stub: button " << event->button() << " released\n";
 }
 
 void Viewer::mouseMoveEvent ( QMouseEvent * event ) {
-    std::cerr << "Stub: Motion at " << event->x() << ", " << event->y() << std::endl;
-
     float dx = (float)(event->x() - mMouseCoord.x())/(float)abs(width());
     float dy = (float)((height()-event->y()) - mMouseCoord.y())/(float)abs(height());
 
@@ -302,8 +297,6 @@ void Viewer::set_colour(const QColor& col)
 }
 
 bool Viewer::picker() {
-  std::cout << "viewport ray: {" << mMouseCoord.x() << ", " << mMouseCoord.y() << "}" << std::endl;
-
   // Transform ray from viewport coordinates to NDC
   QVector2D ray_screen (2.0*mMouseCoord.x()/(float)width()-1.0, 2.0*mMouseCoord.y()/(float)height()-1.0);
 
@@ -318,8 +311,6 @@ bool Viewer::picker() {
   QVector3D ray = (ray_far - ray_near).toVector3D().normalized();
 
   QVector3D ray_O = -getCameraMatrix().column(3).toVector3D();
-
-  std::cout << "world ray: {" << ray.x() << ", " << ray.y() << ", " << ray.z() << "}" << std::endl;
 
   for(size_t i = 0; i < mSphereIndices.size(); i += 3) {
     QVector3D p0 (mSphereVertices[mSphereIndices[i]*3], mSphereVertices[mSphereIndices[i]*3+1], mSphereVertices[mSphereIndices[i]*3+2]);
