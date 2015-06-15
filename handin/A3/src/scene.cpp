@@ -142,6 +142,7 @@ void JointNode::apply_joint_rotation(float x_rot, float y_rot)
   SceneNode::apply_joint_rotation(x_rot, y_rot);
   if(m_selected) {
     // Must ensure angles are within the constraints
+    if(m_undo_stack.size() == 0) m_undo_stack.push_back((JointAngles){m_joint_x.init, m_joint_y.init});
     JointAngles& angles = m_undo_stack.back();
     angles.x_rot = (x_rot + angles.x_rot <= m_joint_x.max) ? ((x_rot + angles.x_rot >= m_joint_x.min) ? angles.x_rot + x_rot : m_joint_x.min) : m_joint_x.max;
     angles.y_rot = (y_rot + angles.y_rot <= m_joint_y.max) ? ((y_rot + angles.y_rot >= m_joint_y.min) ? angles.y_rot + y_rot : m_joint_y.min) : m_joint_y.max;
@@ -155,12 +156,6 @@ void JointNode::walk_gl(Viewer* viewer, bool picking)
   // set the joint as selected and return
   viewer->pushMatrix();
   viewer->multMatrix(get_transform());
-
-  // Transform joint children to initial x and y angles 
-  QMatrix4x4 m;
-  m.rotate(m_joint_x.init, 1, 0, 0);
-  m.rotate(m_joint_y.init, 0, 1, 0);
-  viewer->multMatrix(m);
 
   // Multiply by joint rotation angles
   QMatrix4x4 joint;
