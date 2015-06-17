@@ -1,0 +1,21 @@
+Name: Sekhar Bhattacharya
+Student Number: 20381175
+User-id: s4bhatta
+Assignment: A3
+
+The final executable was compiled on this machine: 
+gl07
+
+How to invoke my program: 
+./puppeteer
+To load a3mark.lua: ./puppeteer src/a3mark.lua
+
+How to use my extra features: 
+
+
+I have created the following data files, which are in the data directory:
+
+
+My program assumes the following: 
+
+
