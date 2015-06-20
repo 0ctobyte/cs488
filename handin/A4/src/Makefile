@@ -7,6 +7,11 @@ CXXFLAGS = $(CPPFLAGS) -W -Wall -g
 CXX = g++
 MAIN = rt
 
+ifeq ($(shell uname), Darwin)
+LDFLAGS = -L/usr/local/opt/libpng12/lib $(shell pkg-config --libs lua5.1) -lpng
+CPPFLAGS = -I/usr/local/opt/libpng12/include $(shell pkg-config --cflags lua5.1)
+endif
+
 all: $(MAIN)
 
 depend: $(DEPENDS)
