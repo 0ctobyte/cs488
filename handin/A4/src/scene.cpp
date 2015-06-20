@@ -12,20 +12,17 @@ SceneNode::~SceneNode()
 
 void SceneNode::rotate(char axis, double angle)
 {
-  std::cerr << "Stub: Rotate " << m_name << " around " << axis << " by " << angle << std::endl;
-  // Fill me in
+  set_transform(m_trans.rotate(angle, (axis == 'x') ? 1.0 : 0.0, (axis == 'y') ? 1.0 : 0.0, (axis == 'z') ? 1.0 : 0.0));
 }
 
 void SceneNode::scale(const Vector3D& amount)
 {
-  std::cerr << "Stub: Scale " << m_name << " by " << amount << std::endl;
-  // Fill me in
+  set_transform(m_trans.scale(amount));
 }
 
 void SceneNode::translate(const Vector3D& amount)
 {
-  std::cerr << "Stub: Translate " << m_name << " by " << amount << std::endl;
-  // Fill me in
+  set_transform(m_trans.translate(amount));
 }
 
 bool SceneNode::is_joint() const

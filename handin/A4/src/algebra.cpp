@@ -141,3 +141,76 @@ Matrix4x4 Matrix4x4::invert() const
 
   return ret;
 }
+
+Matrix4x4 Matrix4x4::translate(double x, double y, double z) const
+{
+  Matrix4x4 t;
+  t[0][3] = x;
+  t[1][3] = y;
+  t[2][3] = z;
+  return (*this) * t;
+}
+
+Matrix4x4 Matrix4x4::translate(const Vector3D& v) const
+{
+  return translate(v[0], v[1], v[2]);
+}
+
+Matrix4x4 Matrix4x4::rotate(double angle, double x, double y, double z) const
+{
+  Matrix4x4 r;
+
+  // Calculate angle in radians
+  angle = angle * M_PI / 180.0f;
+
+  // Calculate constant values
+  double c = cos(angle);
+  double s = sin(angle);
+  double oc = 1 - c;
+  
+  double xxoc = x*x*oc;
+  double xyoc = x*y*oc;
+  double xzoc = x*z*oc;
+  double yyoc = y*y*oc;
+  double yzoc = y*z*oc;
+  double zzoc = z*z*oc;
+
+  double xs = x*s;
+  double ys = y*s;
+  double zs = z*s;
+
+  // Apply the rotation to the arbitrary axis
+  r[0][0] = xxoc+c;
+  r[1][0] = xyoc+zs;
+  r[2][0] = xzoc-ys;
+  r[0][1] = xyoc-zs;
+  r[1][1] = yyoc+c;
+  r[2][1] = yzoc+xs;
+  r[0][2] = xzoc+ys;
+  r[1][2] = yzoc-xs;
+  r[2][2] = zzoc+c;
+
+  return (*this) * r;
+}
+
+Matrix4x4 Matrix4x4::rotate(double angle, const Vector3D& v) const
+{
+  return rotate(angle, v[0], v[1], v[2]);
+}
+
+Matrix4x4 Matrix4x4::scale(double x, double y, double z) const
+{
+  Matrix4x4 s;
+
+  s[0][0] = x;
+  s[1][1] = y;
+  s[2][2] = z;
+
+  return (*this) * s;
+}
+
+Matrix4x4 Matrix4x4::scale(const Vector3D& v) const
+{
+  return scale(v[0], v[1], v[2]);
+}
+

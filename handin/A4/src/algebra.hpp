@@ -356,6 +356,13 @@ public:
   }
   Matrix4x4 invert() const;
 
+  Matrix4x4 translate(double x, double y, double z) const;
+  Matrix4x4 translate(const Vector3D& v) const;
+  Matrix4x4 rotate(double angle, double x, double y, double z) const;
+  Matrix4x4 rotate(double angle, const Vector3D& v) const;
+  Matrix4x4 scale(double x, double y, double z) const;
+  Matrix4x4 scale(const Vector3D& v) const;
+
   const double *begin() const
   {
     return (double*)v_;

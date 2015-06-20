@@ -1,6 +1,8 @@
 #include "a4.hpp"
 #include "image.hpp"
 
+#include <cmath>
+
 void a4_render(// What to render
                SceneNode* root,
                // Where to output the image
@@ -27,6 +29,17 @@ void a4_render(// What to render
     std::cerr << **I;
   }
   std::cerr << "});" << std::endl;
+
+  // Get unprojection matrix
+  double d = 1.0; // distance to near plane (projection plane)
+  double h = 2.0*d*tan(fov / 2.0); // height of projection plane based field of view and distance to the plane
+  
+  // First translate the pixel so that it is centered at the origin in the projection plane (origin is in the middle of the screen)
+  Matrix4x4 m = Matrix4x4().translate(-(double)width / 2.0, -(double)height / 2.0, d);
+
+  // Then scale it to the projection plane such that aspect ratio is maintained and we have a right handed coordinate system
+  m = m.scale(-h / (double)height, h / (double)height, 1.0);
+
   
   // For now, just make a sample image.
 
