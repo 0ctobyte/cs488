@@ -2,6 +2,7 @@
 #include "image.hpp"
 
 #include <cmath>
+#include <algorithm>
 
 Matrix4x4 a4_get_unproject_matrix(int width, int height, double fov, double d, Point3D eye, Vector3D view, Vector3D up)
 {
@@ -29,6 +30,52 @@ Matrix4x4 a4_get_unproject_matrix(int width, int height, double fov, double d, P
   Matrix4x4 unproject = view_translate * view_rotate * viewport_scale * viewport_translate;
 
   return unproject;
+}
+
+Colour a4_phong_shading(const Ray& ray, const Intersection& i, const std::list<Light*>& lights, const Colour& ambient)
+{
+  Colour final_colour(0, 0, 0);
+
+  Point3D surface_point = ray.origin() + i.t*ray.direction();
+  Vector3D normal = i.normal;
+
+  for(auto light : lights)
+  {
+    // Set up the parameters for the lights
+    // Calculate the vector from the surface point to the light source
+    Vector3D surface_to_light = light->position - surface_point;
+    double distance_to_light = surface_to_light.length(); 
+    surface_to_light.normalize();
+
+    // Calculate the diffuse brightness
+    // No need to divide dot product by product of the lengths since both vectors are normalized
+    double diffuse_brightness = std::max(0.0, normal.dot(surface_to_light)); 
+
+    // Calculate the diffuse colour component
+    Colour diffuse = diffuse_brightness * i.material->diffuse() * light->colour;
+
+    // Calculate the angle of reflectance
+    // The incidence vector is the vector surface_to_light but in the opposite direction
+    Vector3D incidence = -surface_to_light;
+    Vector3D reflected = incidence - 2*(incidence.dot(normal))*normal;
+    reflected.normalize();
+
+    // Calculate the vector from the eye point to the surface point
+    Vector3D surface_to_eye = ray.origin() - surface_point;
+
+    // Calculate the specular brightness
+    // Can't have specular highlights if no diffuse lighting at the point!
+    double specular_brightness = (diffuse_brightness > 0) ? pow(std::max(0.0, surface_to_eye.dot(reflected)), i.material->shininess()) : 0.0;
+
+    // Calculate the specular colour component
+    Colour specular = specular_brightness * i.material->specular() * light->colour;
+
+    // Calculate attenuation factor
+    double attenuation = 1.0 / (light->falloff[0] + light->falloff[1]*distance_to_light + light->falloff[2]*(distance_to_light*distance_to_light));
+
+    final_colour = ambient * light->colour + (attenuation * (diffuse + specular));
+  }
+  return final_colour;
 }
 
 void a4_render(// What to render
@@ -65,6 +112,9 @@ void a4_render(// What to render
 
   Image img(width, height, 3);
 
+  int one_percent = width*height*0.01;
+  int pixel_count = 0, percentage = 0;
+
   for (int y = 0; y < height; y++) {
     for (int x = 0; x < width; x++) {
       // Unproject the pixel to the projection plane
@@ -79,15 +129,25 @@ void a4_render(// What to render
       Intersection i;
       i.material = &material;
 
-      root->intersect(ray, i);
+      bool intersected = root->intersect(ray, i);
 
-      img(x, y, 0) = i.material->diffuse().R();
-      img(x, y, 1) = i.material->diffuse().G();
-      img(x, y, 2) = i.material->diffuse().B();
+      Colour colour(0, 0, 0);
+      if(intersected) colour = a4_phong_shading(ray, i, lights, ambient);
 
-      std::cout << "Pixel: " << pixel << " | " << "Point3D: " << p << std::endl;
+      img(x, y, 0) = colour.R();
+      img(x, y, 1) = colour.G();
+      img(x, y, 2) = colour.B();
+
+      if(++pixel_count >= one_percent)
+      {
+        pixel_count = 0;
+        std::cout << "progress: " << ++percentage << "% \r" << std::flush;
+      }
     }
   }
+    
+  std::cout << std::endl;
+
   img.savePng(filename);
   
 }

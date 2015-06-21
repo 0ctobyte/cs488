@@ -50,11 +50,15 @@ bool NonhierSphere::intersect(const Ray& ray, Intersection& j) const
   if(num_roots == 1)
   {
     j.t = roots[0];
+    j.normal = (ray.origin() + j.t*ray.direction()) - m_pos;
+    j.normal.normalize();
     return true;
   }
   else if(num_roots == 2)
   {
     j.t = (roots[0] < roots[1]) ? roots[0] : roots[1];
+    j.normal = (ray.origin() + j.t*ray.direction()) - m_pos;
+    j.normal.normalize();
     return true;
   }
   else

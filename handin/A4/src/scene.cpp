@@ -82,16 +82,18 @@ bool GeometryNode::intersect(const Ray& ray, Intersection& i) const
   // is closer to the eye point so replace the material with this primitive's
   // material.
   Intersection j;
-  if(m_primitive->intersect(ray, j))
+  bool intersects = m_primitive->intersect(ray, j);
+  if(intersects)
   {
     if(j.t < i.t)
     {
       i.t = j.t;
+      i.normal = j.normal;
       i.material = (PhongMaterial*)get_material();
     }
   }
 
-  return SceneNode::intersect(ray, i);
+  return (intersects || SceneNode::intersect(ray, i));
 }
 
 GeometryNode::~GeometryNode()

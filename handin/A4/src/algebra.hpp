@@ -532,6 +532,13 @@ inline Colour operator +(const Colour& a, const Colour& b)
   return Colour(a.R()+b.R(), a.G()+b.G(), a.B()+b.B());
 }
 
+inline Colour clamp(const Colour& a, double min, double max)
+{
+  return Colour((a.R() < min) ? min : ((a.R() > max) ? max : a.R()),
+                (a.G() < min) ? min : ((a.G() > max) ? max : a.G()),
+                (a.B() < min) ? min : ((a.B() > max) ? max : a.B()));
+}
+
 inline std::ostream& operator <<(std::ostream& os, const Colour& c)
 {
   return os << "c<" << c.R() << "," << c.G() << "," << c.B() << ">";
@@ -569,8 +576,9 @@ public:
     , t(std::numeric_limits<double>::infinity())
   {}
 
-  PhongMaterial *material;
-  double t;
+  PhongMaterial *material; // Material properties at intersection point
+  double t; // Intersection point: t*ray.direction + ray.origin
+  Vector3D normal; // Surface normal at intersection point
 };
 
 #endif // CS488_ALGEBRA_HPP
