@@ -4,6 +4,7 @@
 #include <list>
 #include "algebra.hpp"
 #include "primitive.hpp"
+#include "mesh.hpp"
 #include "material.hpp"
 
 class SceneNode {

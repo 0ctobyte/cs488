@@ -135,7 +135,7 @@ void a4_render(// What to render
 
       bool intersected = root->intersect(ray, i);
 
-      Colour colour(0, 0, 0);
+      Colour colour = Colour(ray.direction()[0], ray.direction()[1], ray.direction()[2]) * Colour(1.0, 1.0, 1.0) + Colour(0.3, 0.3, 0.3);
       if(intersected) colour = a4_phong_shading(ray, i, lights, ambient);
 
       img(x, y, 0) = colour.R();

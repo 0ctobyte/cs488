@@ -89,7 +89,7 @@ bool GeometryNode::intersect(const Ray& ray, Intersection& i) const
     {
       i.t = j.t;
       i.normal = j.normal;
-      i.material = (PhongMaterial*)get_material();
+      i.material = get_material();
     }
   }
 
