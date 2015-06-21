@@ -38,6 +38,7 @@ Colour a4_phong_shading(const Ray& ray, const Intersection& i, const std::list<L
 
   Point3D surface_point = ray.origin() + i.t*ray.direction();
   Vector3D normal = i.normal;
+  PhongMaterial *material = dynamic_cast<PhongMaterial*>(i.material);
 
   for(auto light : lights)
   {
@@ -52,7 +53,7 @@ Colour a4_phong_shading(const Ray& ray, const Intersection& i, const std::list<L
     double diffuse_brightness = std::max(0.0, normal.dot(surface_to_light)); 
 
     // Calculate the diffuse colour component
-    Colour diffuse = diffuse_brightness * i.material->diffuse() * light->colour;
+    Colour diffuse = diffuse_brightness * material->diffuse() * light->colour;
 
     // Calculate the angle of reflectance
     // The incidence vector is the vector surface_to_light but in the opposite direction
@@ -66,10 +67,10 @@ Colour a4_phong_shading(const Ray& ray, const Intersection& i, const std::list<L
 
     // Calculate the specular brightness
     // Can't have specular highlights if no diffuse lighting at the point!
-    double specular_brightness = (diffuse_brightness > 0) ? pow(std::max(0.0, surface_to_eye.dot(reflected)), i.material->shininess()) : 0.0;
+    double specular_brightness = (diffuse_brightness > 0) ? pow(std::max(0.0, surface_to_eye.dot(reflected)), material->shininess()) : 0.0;
 
     // Calculate the specular colour component
-    Colour specular = specular_brightness * i.material->specular() * light->colour;
+    Colour specular = specular_brightness * material->specular() * light->colour;
 
     // Calculate attenuation factor
     double attenuation = 1.0 / (light->falloff[0] + light->falloff[1]*distance_to_light + light->falloff[2]*(distance_to_light*distance_to_light));
