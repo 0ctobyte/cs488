@@ -24,7 +24,7 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-class PhongMaterial;
+class Material;
 
 class Point2D
 {
@@ -576,7 +576,7 @@ public:
     , t(std::numeric_limits<double>::infinity())
   {}
 
-  PhongMaterial *material; // Material properties at intersection point
+  Material *material; // Material properties at intersection point
   double t; // Intersection point: t*ray.direction + ray.origin
   Vector3D normal; // Surface normal at intersection point
 };
