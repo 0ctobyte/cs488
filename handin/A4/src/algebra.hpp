@@ -193,6 +193,13 @@ public:
 
   double normalize();
 
+  Vector3D normalized()
+  {
+    Vector3D v(v_[0], v_[1], v_[2]);
+    v.normalize();
+    return v;
+  }
+
   Vector3D cross(const Vector3D& other) const
   {
     return Vector3D(v_[1]*other[2] - v_[2]*other[1],

@@ -47,6 +47,8 @@ public:
   
   virtual ~NonhierBox();
 
+  virtual bool intersect(const Ray& ray, Intersection& j) const;
+
 private:
   Point3D m_pos;
   double m_size;
