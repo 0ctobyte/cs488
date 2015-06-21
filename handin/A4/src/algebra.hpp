@@ -18,10 +18,13 @@
 #include <iostream>
 #include <algorithm>
 #include <cmath>
+#include <limits>
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
+
+class PhongMaterial;
 
 class Point2D
 {
@@ -83,6 +86,18 @@ public:
     v_[1] = other.v_[1];
     v_[2] = other.v_[2];
   }
+  Point3D(const Point2D& other, double z)
+  {
+    v_[0] = other[0];
+    v_[1] = other[1];
+    v_[2] = z;
+  }
+  Point3D(const Point2D& other)
+  {
+    v_[0] = other[0];
+    v_[1] = other[1];
+    v_[2] = 0.0;
+  }
 
   Point3D& operator =(const Point3D& other)
   {
@@ -126,6 +141,24 @@ public:
     v_[1] = other.v_[1];
     v_[2] = other.v_[2];
   }
+  Vector3D(const Point3D& other)
+  {
+    v_[0] = other[0];
+    v_[1] = other[1];
+    v_[2] = other[2];
+  }
+  Vector3D(const Point2D& other, double z)
+  {
+    v_[0] = other[0];
+    v_[1] = other[1];
+    v_[2] = z;
+  }
+  Vector3D(const Point2D& other)
+  {
+    v_[0] = other[0];
+    v_[1] = other[1];
+    v_[2] = 0.0;
+  }
 
   Vector3D& operator =(const Vector3D& other)
   {
@@ -162,8 +195,7 @@ public:
 
   Vector3D cross(const Vector3D& other) const
   {
-    return Vector3D(
-                    v_[1]*other[2] - v_[2]*other[1],
+    return Vector3D(v_[1]*other[2] - v_[2]*other[1],
                     v_[2]*other[0] - v_[0]*other[2],
                     v_[0]*other[1] - v_[1]*other[0]);
   }
@@ -252,6 +284,20 @@ public:
     v_[1] = other.v_[1];
     v_[2] = other.v_[2];
     v_[3] = other.v_[3];
+  }
+  Vector4D(const Vector3D& other, double w)
+  {
+    v_[0] = other[0];
+    v_[1] = other[1];
+    v_[2] = other[2];
+    v_[3] = w;
+  }
+  Vector4D(const Vector3D& other) 
+  {
+    v_[0] = other[0];
+    v_[1] = other[1];
+    v_[2] = other[2];
+    v_[3] = 1.0;
   }
 
   Vector4D& operator =(const Vector4D& other)
@@ -394,24 +440,21 @@ inline Matrix4x4 operator *(const Matrix4x4& a, const Matrix4x4& b)
 
 inline Vector3D operator *(const Matrix4x4& M, const Vector3D& v)
 {
-  return Vector3D(
-                  v[0] * M[0][0] + v[1] * M[0][1] + v[2] * M[0][2],
+  return Vector3D(v[0] * M[0][0] + v[1] * M[0][1] + v[2] * M[0][2],
                   v[0] * M[1][0] + v[1] * M[1][1] + v[2] * M[1][2],
                   v[0] * M[2][0] + v[1] * M[2][1] + v[2] * M[2][2]);
 }
 
 inline Point3D operator *(const Matrix4x4& M, const Point3D& p)
 {
-  return Point3D(
-                 p[0] * M[0][0] + p[1] * M[0][1] + p[2] * M[0][2] + M[0][3],
+  return Point3D(p[0] * M[0][0] + p[1] * M[0][1] + p[2] * M[0][2] + M[0][3],
                  p[0] * M[1][0] + p[1] * M[1][1] + p[2] * M[1][2] + M[1][3],
                  p[0] * M[2][0] + p[1] * M[2][1] + p[2] * M[2][2] + M[2][3]);
 }
 
 inline Vector3D transNorm(const Matrix4x4& M, const Vector3D& n)
 {
-  return Vector3D(
-                  n[0] * M[0][0] + n[1] * M[1][0] + n[2] * M[2][0],
+  return Vector3D(n[0] * M[0][0] + n[1] * M[1][0] + n[2] * M[2][0],
                   n[0] * M[0][1] + n[1] * M[1][1] + n[2] * M[2][1],
                   n[0] * M[0][2] + n[1] * M[1][2] + n[2] * M[2][2]);
 }
@@ -493,5 +536,41 @@ inline std::ostream& operator <<(std::ostream& os, const Colour& c)
 {
   return os << "c<" << c.R() << "," << c.G() << "," << c.B() << ">";
 }
+
+class Ray {
+public:
+  Ray(const Point3D& origin, const Vector3D& direction)
+    : origin_(origin)
+    , direction_(direction)
+  {}
+  Ray(const Ray& other)
+    : origin_(other.origin())
+    , direction_(other.direction())
+  {}
+
+  Point3D origin() const
+  {
+    return origin_;
+  }
+  Vector3D direction() const
+  {
+    return direction_;
+  }
+
+private:
+  Point3D origin_;
+  Vector3D direction_;
+};
+
+class Intersection {
+public:
+  Intersection() 
+    : material(NULL)
+    , t(std::numeric_limits<double>::infinity())
+  {}
+
+  PhongMaterial *material;
+  double t;
+};
 
 #endif // CS488_ALGEBRA_HPP

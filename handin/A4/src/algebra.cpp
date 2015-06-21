@@ -145,9 +145,9 @@ Matrix4x4 Matrix4x4::invert() const
 Matrix4x4 Matrix4x4::translate(double x, double y, double z) const
 {
   Matrix4x4 t;
-  t[0][3] = x;
-  t[1][3] = y;
-  t[2][3] = z;
+  t.v_[3] = x;
+  t.v_[7] = y;
+  t.v_[11] = z;
   return (*this) * t;
 }
 
@@ -180,15 +180,15 @@ Matrix4x4 Matrix4x4::rotate(double angle, double x, double y, double z) const
   double zs = z*s;
 
   // Apply the rotation to the arbitrary axis
-  r[0][0] = xxoc+c;
-  r[1][0] = xyoc+zs;
-  r[2][0] = xzoc-ys;
-  r[0][1] = xyoc-zs;
-  r[1][1] = yyoc+c;
-  r[2][1] = yzoc+xs;
-  r[0][2] = xzoc+ys;
-  r[1][2] = yzoc-xs;
-  r[2][2] = zzoc+c;
+  r.v_[0] = xxoc+c;
+  r.v_[4] = xyoc+zs;
+  r.v_[8] = xzoc-ys;
+  r.v_[1] = xyoc-zs;
+  r.v_[5] = yyoc+c;
+  r.v_[9] = yzoc+xs;
+  r.v_[2] = xzoc+ys;
+  r.v_[6] = yzoc-xs;
+  r.v_[10] = zzoc+c;
 
   return (*this) * r;
 }
@@ -202,9 +202,9 @@ Matrix4x4 Matrix4x4::scale(double x, double y, double z) const
 {
   Matrix4x4 s;
 
-  s[0][0] = x;
-  s[1][1] = y;
-  s[2][2] = z;
+  s.v_[0] = x;
+  s.v_[5] = y;
+  s.v_[10] = z;
 
   return (*this) * s;
 }

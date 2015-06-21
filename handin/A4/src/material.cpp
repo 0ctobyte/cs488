@@ -13,7 +13,3 @@ PhongMaterial::~PhongMaterial()
 {
 }
 
-void PhongMaterial::apply_gl() const
-{
-  // Perform OpenGL calls necessary to set up this material.
-}

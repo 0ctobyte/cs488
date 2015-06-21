@@ -36,6 +36,8 @@ public:
     m_children.remove(child);
   }
 
+  virtual bool intersect(const Ray& ray, Intersection& i) const;
+
   // Callbacks to be implemented.
   // These will be called from Lua.
   void rotate(char axis, double angle);
@@ -86,8 +88,16 @@ public:
                Primitive* primitive);
   virtual ~GeometryNode();
 
-  const Material* get_material() const;
-  Material* get_material();
+  virtual bool intersect(const Ray& ray, Intersection& i) const;
+
+  const Material* get_material()
+  {
+    return m_material;
+  }
+  Material* get_material() const 
+  {
+    return m_material;
+  }
 
   void set_material(Material* material)
   {

@@ -6,6 +6,11 @@
 class Primitive {
 public:
   virtual ~Primitive();
+
+  virtual bool intersect(const Ray& ray, Intersection& j) const
+  {
+    return false;
+  }
 };
 
 class Sphere : public Primitive {
@@ -25,6 +30,8 @@ public:
   {
   }
   virtual ~NonhierSphere();
+
+  virtual bool intersect(const Ray& ray, Intersection& j) const;
 
 private:
   Point3D m_pos;

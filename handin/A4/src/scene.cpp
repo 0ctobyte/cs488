@@ -30,6 +30,16 @@ bool SceneNode::is_joint() const
   return false;
 }
 
+bool SceneNode::intersect(const Ray& ray, Intersection& i) const
+{
+  bool intersects = false;
+  for(auto child : m_children)
+  {
+    intersects = intersects || child->intersect(ray, i);
+  }
+  return intersects;
+}
+
 JointNode::JointNode(const std::string& name)
   : SceneNode(name)
 {
@@ -62,6 +72,26 @@ GeometryNode::GeometryNode(const std::string& name, Primitive* primitive)
   : SceneNode(name),
     m_primitive(primitive)
 {
+}
+
+bool GeometryNode::intersect(const Ray& ray, Intersection& i) const
+{
+  // Test for intersection
+  // If there is an intersection, check if the t parameter is less than
+  // the previous intersection t parameter. If it is then this primitive
+  // is closer to the eye point so replace the material with this primitive's
+  // material.
+  Intersection j;
+  if(m_primitive->intersect(ray, j))
+  {
+    if(j.t < i.t)
+    {
+      i.t = j.t;
+      i.material = (PhongMaterial*)get_material();
+    }
+  }
+
+  return SceneNode::intersect(ray, i);
 }
 
 GeometryNode::~GeometryNode()
