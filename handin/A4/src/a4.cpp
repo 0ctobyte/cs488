@@ -75,7 +75,7 @@ Colour a4_phong_shading(const Ray& ray, const Intersection& i, const std::list<L
     // Calculate attenuation factor
     double attenuation = 1.0 / (light->falloff[0] + light->falloff[1]*distance_to_light + light->falloff[2]*(distance_to_light*distance_to_light));
 
-    Colour lighted = ambient * light->colour + (attenuation * (diffuse + specular));
+    Colour lighted = ambient * material->diffuse() + (attenuation * (diffuse + specular));
 
     final_colour = final_colour + lighted;
   }
