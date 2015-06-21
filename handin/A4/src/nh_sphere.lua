@@ -19,9 +19,9 @@ s1:set_material(mat1)
 --scene_root:add_child(s3)
 --s3:set_material(mat3)
 
-white_light = gr.light({800.0, 150.0, 400.0}, {0.9, 0.9, 0.9}, {1, 0, 0})
---orange_light = gr.light({-100.0, 150.0, 150.0}, {0.7, 0.0, 0.7}, {1, 0, 0})
+white_light = gr.light({-100.0, 150.0, 400.0}, {0.9, 0.9, 0.9}, {1, 0, 0})
+orange_light = gr.light({400.0, 100.0, 150.0}, {0.7, 0.0, 0.7}, {1, 0, 0})
 
 gr.render(scene_root, 'nh_sphere.png', 2048, 2048,
 	  {0, 0, 800}, {0, 0, -1}, {0, 1, 0}, 50,
-	  {0.3, 0.3, 0.3}, {white_light})
+	  {0.3, 0.3, 0.3}, {white_light, orange_light})

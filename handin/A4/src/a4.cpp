@@ -62,6 +62,7 @@ Colour a4_phong_shading(const Ray& ray, const Intersection& i, const std::list<L
 
     // Calculate the vector from the eye point to the surface point
     Vector3D surface_to_eye = ray.origin() - surface_point;
+    surface_to_eye.normalize();
 
     // Calculate the specular brightness
     // Can't have specular highlights if no diffuse lighting at the point!
@@ -73,7 +74,9 @@ Colour a4_phong_shading(const Ray& ray, const Intersection& i, const std::list<L
     // Calculate attenuation factor
     double attenuation = 1.0 / (light->falloff[0] + light->falloff[1]*distance_to_light + light->falloff[2]*(distance_to_light*distance_to_light));
 
-    final_colour = ambient * light->colour + (attenuation * (diffuse + specular));
+    Colour lighted = ambient * light->colour + (attenuation * (diffuse + specular));
+
+    final_colour = lighted;
   }
   return final_colour;
 }
