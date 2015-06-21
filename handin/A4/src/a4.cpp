@@ -76,7 +76,7 @@ Colour a4_phong_shading(const Ray& ray, const Intersection& i, const std::list<L
 
     Colour lighted = ambient * light->colour + (attenuation * (diffuse + specular));
 
-    final_colour = lighted;
+    final_colour = final_colour + lighted;
   }
   return final_colour;
 }
