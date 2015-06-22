@@ -53,7 +53,7 @@ bool NonhierSphere::intersect(const Ray& ray, Intersection& j) const
   // will be the visible point of the sphere. Of course t must not be negative otherwise it is behind the eye point
   if(num_roots > 0)
   {
-    double t = (num_roots == 1) ? roots[0] : std::max<double>(roots[0], roots[1]);
+    double t = (num_roots == 1) ? roots[0] : std::min<double>(roots[0], roots[1]);
     if(t < 0) return false;
     j.t = t;
     j.normal = ((ray.origin() + j.t*ray.direction()) - m_pos).normalized();
