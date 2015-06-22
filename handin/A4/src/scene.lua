@@ -7,6 +7,14 @@ mat4 = gr.material({0.7, 0.6, 1.0}, {0.5, 0.4, 0.8}, 25)
 
 scene = gr.node('root')
 
+s3 = gr.nh_sphere('s3', {90, -40, -300}, 50)
+scene:add_child(s3)
+s3:set_material(mat3)
+
+b2 = gr.nh_box('b2', {60.0, 70.0, -300}, 50)
+scene:add_child(b2)
+b2:set_material(mat4)
+
 b1 = gr.nh_box('b1', {50, -125, -400}, 50)
 scene:add_child(b1)
 b1:set_material(mat4)
@@ -19,16 +27,11 @@ s2 = gr.nh_sphere('s2', {-20, -100, -400}, 50)
 scene:add_child(s2)
 s2:set_material(mat2)
 
-s3 = gr.nh_sphere('s3', {90, -40, -300}, 50)
-scene:add_child(s3)
-s3:set_material(mat3)
-
---s = gr.sphere('s')
---scene:add_child(s);
---s:set_material(mat1)
---s:scale(20.0, 20.0, 20.0)
-
---scene:translate(0.0, 0.0, 200.0)
+s = gr.sphere('s')
+scene:add_child(s)
+s:set_material(mat1)
+s:scale(30.0, 40.0, 30.0)
+s:translate(40.0, 50.0, -400.0)
 
 scale = 30.0
 t = scale*((1.0 + math.sqrt(5.0)) / 2.0);

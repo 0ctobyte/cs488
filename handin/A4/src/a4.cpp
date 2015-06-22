@@ -32,57 +32,51 @@ Matrix4x4 a4_get_unproject_matrix(int width, int height, double fov, double d, P
   return unproject;
 }
 
-Colour a4_lighting(const Ray& ray, const Intersection& i, const std::list<Light*>& lights, const Colour& ambient)
+Colour a4_lighting(const Ray& ray, const Intersection& i, const Light* light, const Colour& ambient)
 {
-  Colour final_colour(0, 0, 0);
-
   Point3D surface_point = i.q;
-  Vector3D normal = i.n;
+  Vector3D normal = i.n.normalized();
   PhongMaterial *material = dynamic_cast<PhongMaterial*>(i.m);
   
-  for(auto light : lights)
-  {
-    // Set up the parameters for the lights
-    // Calculate the vector from the surface point to the light source
-    Vector3D surface_to_light = light->position - surface_point;
-    double distance_to_light = surface_to_light.length(); 
-    surface_to_light.normalize();
+  // Set up the parameters for the lights
+  // Calculate the vector from the surface point to the light source
+  Vector3D surface_to_light = light->position - surface_point;
+  double distance_to_light = surface_to_light.length(); 
+  surface_to_light.normalize();
 
-    // Calculate the diffuse brightness
-    // No need to divide dot product by product of the lengths since both vectors are normalized
-    double diffuse_brightness = std::max(0.0, normal.dot(surface_to_light)); 
+  // Calculate the diffuse brightness
+  // No need to divide dot product by product of the lengths since both vectors are normalized
+  double diffuse_brightness = std::max(0.0, normal.dot(surface_to_light)); 
 
-    // Calculate the diffuse colour component
-    Colour diffuse = diffuse_brightness * material->diffuse() * light->colour;
+  // Calculate the diffuse colour component
+  Colour diffuse = diffuse_brightness * material->diffuse() * light->colour;
 
-    // Calculate the angle of reflectance
-    // The incidence vector is the vector surface_to_light but in the opposite direction
-    Vector3D incidence = -surface_to_light;
-    Vector3D reflected = incidence - 2*(incidence.dot(normal))*normal;
-    reflected.normalize();
+  // Calculate the angle of reflectance
+  // The incidence vector is the vector surface_to_light but in the opposite direction
+  Vector3D incidence = -surface_to_light;
+  Vector3D reflected = incidence - 2*(incidence.dot(normal))*normal;
+  reflected.normalize();
 
-    // Calculate the vector from the eye point to the surface point
-    Vector3D surface_to_eye = ray.origin() - surface_point;
-    surface_to_eye.normalize();
+  // Calculate the vector from the eye point to the surface point
+  Vector3D surface_to_eye = ray.origin() - surface_point;
+  surface_to_eye.normalize();
 
-    // Calculate the specular brightness
-    // Can't have specular highlights if no diffuse lighting at the point!
-    double specular_brightness = (diffuse_brightness > 0) ? pow(std::max(0.0, surface_to_eye.dot(reflected)), material->shininess()) : 0.0;
+  // Calculate the specular brightness
+  // Can't have specular highlights if no diffuse lighting at the point!
+  double specular_brightness = (diffuse_brightness > 0) ? pow(std::max(0.0, surface_to_eye.dot(reflected)), material->shininess()) : 0.0;
 
-    // Calculate the specular colour component
-    Colour specular = specular_brightness * material->specular() * light->colour;
+  // Calculate the specular colour component
+  Colour specular = specular_brightness * material->specular() * light->colour;
 
-    // Calculate attenuation factor
-    double attenuation = 1.0 / (light->falloff[0] + light->falloff[1]*distance_to_light + light->falloff[2]*(distance_to_light*distance_to_light));
+  // Calculate attenuation factor
+  double attenuation = 1.0 / (light->falloff[0] + light->falloff[1]*distance_to_light + light->falloff[2]*(distance_to_light*distance_to_light));
 
-    // if the light was blocked by another object then don't add it's contribution
-    double shadow = light->blocked ? 0.0 : 1.0;
+  // if the light was blocked by another object then don't add it's contribution
+  double shadow = light->blocked ? 0.0 : 1.0;
 
-    Colour lighted = ambient * material->diffuse() + shadow * (attenuation * (diffuse + specular));
+  Colour lighted = ambient * material->diffuse() + shadow * (attenuation * (diffuse + specular));
 
-    final_colour = final_colour + lighted;
-  }
-  return final_colour;
+  return lighted;
 }
 
 void a4_render(// What to render
@@ -131,27 +125,37 @@ void a4_render(// What to render
       // Create the ray with origin at the eye point
       Ray ray(eye, p-eye);
 
-      // Test intersection of ray with scene
-      Intersection i;
-
-      bool intersected = root->intersect(ray, i);
-
-      // Cast shadow rays to each of the light sources. If the ray intersects an object before reaching the light
-      // source then don't count that light sources contribution since it is being blocked
-      if(intersected)
+      // Test intersection of ray with scene for each light source
+      Colour colour(0.0, 0.0, 0.0);
+      for(auto light : lights)
       {
-        // Move the hit position a little away from the object so the ray doesn't intersect from the originating object
-        Point3D hit = ray.origin() + (0.99)*(i.q - ray.origin());
-        Intersection u;
-        for(auto light : lights)
+        Intersection i;
+
+        bool intersected = root->intersect(ray, i);
+
+        // Cast shadow rays to each of the light sources. If the ray intersects an object before reaching the light
+        // source then don't count that light sources contribution since it is being blocked
+        if(intersected)
         {
+          // Move the hit position a little away from the object so the ray doesn't intersect from the originating object
+          Point3D hit = ray.origin() + (0.99)*(i.q - ray.origin());
+          Intersection u;
           Ray shadow(hit, light->position-hit);
-          light->blocked = root->intersect(shadow, u);
+          bool blocked = root->intersect(shadow, u);
+
+          // Make sure to check if intersection point is before light source
+          if((u.q - shadow.origin()).length() > shadow.direction().length()) blocked = false;
+
+          light->blocked = blocked;
+
+          // Perform phong shading at intersection point
+          colour = colour + a4_lighting(ray, i, light, ambient);
+        }
+        else
+        {
+          colour = Colour(ray.direction()[0], ray.direction()[1], ray.direction()[2]) * Colour(1.0, 1.0, 1.0) + Colour(0.3, 0.3, 0.3);
         }
       }
-
-      Colour colour = Colour(ray.direction()[0], ray.direction()[1], ray.direction()[2]) * Colour(1.0, 1.0, 1.0) + Colour(0.3, 0.3, 0.3);
-      if(intersected) colour = a4_lighting(ray, i, lights, ambient);
 
       img(x, y, 0) = colour.R();
       img(x, y, 1) = colour.G();

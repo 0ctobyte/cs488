@@ -13,17 +13,17 @@ SceneNode::~SceneNode()
 
 void SceneNode::rotate(char axis, double angle)
 {
-  set_transform(m_trans.rotate(angle, (tolower(axis) == 'x') ? 1.0 : 0.0, (tolower(axis) == 'y') ? 1.0 : 0.0, (tolower(axis) == 'z') ? 1.0 : 0.0));
+  set_transform(Matrix4x4().rotate(angle, (tolower(axis) == 'x') ? 1.0 : 0.0, (tolower(axis) == 'y') ? 1.0 : 0.0, (tolower(axis) == 'z') ? 1.0 : 0.0) * m_trans);
 }
 
 void SceneNode::scale(const Vector3D& amount)
 {
-  set_transform(m_trans.scale(amount));
+  set_transform(Matrix4x4().scale(amount) * m_trans);
 }
 
 void SceneNode::translate(const Vector3D& amount)
 {
-  set_transform(m_trans.translate(amount));
+  set_transform(Matrix4x4().translate(amount) * m_trans);
 }
 
 bool SceneNode::is_joint() const
@@ -46,8 +46,9 @@ bool SceneNode::intersect(const Ray& ray, Intersection& i) const
   // from MCS->WCS
   if(intersects)
   {
-    i.q = get_transform() * i.q;
-    i.n = transNorm(get_inverse(), i.n);
+    i.q = m_trans * i.q;
+    i.n = transNorm(m_invtrans, i.n);
+    i.n = i.n;
   }
 
   return intersects;
@@ -105,8 +106,8 @@ bool GeometryNode::intersect(const Ray& ray, Intersection& i) const
     // We have to convert the intersection point from MCS->WCS and the normal from MCS->WCS
     // Normals must be multiplied by the transpose of the inverse to throw away scaling (no translations either, but the normal is 
     // a vector and vectors can't be translated) but preserve rotation
-    i.q = get_transform() * j.q;
-    i.n = transNorm(get_inverse(), j.n);
+    i.q = m_trans * j.q;
+    i.n = transNorm(m_invtrans, j.n);
     i.m = get_material();
   }
 
