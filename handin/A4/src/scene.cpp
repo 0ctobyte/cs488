@@ -32,11 +32,23 @@ bool SceneNode::is_joint() const
 
 bool SceneNode::intersect(const Ray& ray, Intersection& i) const
 {
+  // Transform the ray from WCS->MCS for this node
+  Ray r(get_inverse() * ray.origin(), get_inverse() * ray.direction());
+
   bool intersects = false;
   for(auto child : m_children)
   {
-    intersects = intersects || child->intersect(ray, i);
+    intersects = intersects || child->intersect(r, i);
   }
+
+  // If intersection occurs than transform the intersection point and the normal
+  // from MCS->WCS
+  if(intersects)
+  {
+    i.q = get_transform() * i.q;
+    i.n = transNorm(get_inverse(), i.n);
+  }
+
   return intersects;
 }
 
@@ -81,13 +93,22 @@ bool GeometryNode::intersect(const Ray& ray, Intersection& i) const
   // the previous intersection t parameter. If it is then this primitive
   // is closer to the eye point so replace the material with this primitive's
   // material.
+
+  // But first transform ray to geometry's model coordinates (inverse transform from WCS->MCS)
+  Ray r(get_inverse() * ray.origin(), get_inverse() * ray.direction());
+
   Intersection j;
-  bool intersects = m_primitive->intersect(ray, j);
+  bool intersects = m_primitive->intersect(r, j);
   if(intersects)
   {
     if(j.t < i.t)
     {
-      i = j;
+      // We have to convert the intersection point from MCS->WCS and the normal from MCS->WCS
+      // Normals must be multiplied by the transpose of the inverse to throw away scaling (no translations either, but the normal is 
+      // a vector and vectors can't be translated) but preserve rotation
+      i.t = j.t;
+      i.q = get_transform() * j.q;
+      i.n = transNorm(get_inverse(), j.n);
       i.m = get_material();
     }
   }
