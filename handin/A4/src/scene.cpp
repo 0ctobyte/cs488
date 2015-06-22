@@ -87,9 +87,8 @@ bool GeometryNode::intersect(const Ray& ray, Intersection& i) const
   {
     if(j.t < i.t)
     {
-      i.t = j.t;
-      i.normal = j.normal;
-      i.material = get_material();
+      i = j;
+      i.m = get_material();
     }
   }
 

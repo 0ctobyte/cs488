@@ -36,9 +36,9 @@ Colour a4_lighting(const Ray& ray, const Intersection& i, const std::list<Light*
 {
   Colour final_colour(0, 0, 0);
 
-  Point3D surface_point = ray.origin() + i.t*ray.direction();
-  Vector3D normal = i.normal;
-  PhongMaterial *material = dynamic_cast<PhongMaterial*>(i.material);
+  Point3D surface_point = i.q;
+  Vector3D normal = i.n;
+  PhongMaterial *material = dynamic_cast<PhongMaterial*>(i.m);
   
   for(auto light : lights)
   {

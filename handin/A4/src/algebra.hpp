@@ -579,13 +579,22 @@ private:
 class Intersection {
 public:
   Intersection() 
-    : material(NULL)
+    : m(NULL)
     , t(std::numeric_limits<double>::infinity())
+    , q(std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity())
+    , n(0.0, 0.0, 0.0)
+  {}
+  Intersection(const Intersection& other)
+    : m(other.m)
+    , t(other.t)
+    , q(other.q)
+    , n(other.n)
   {}
 
-  Material *material; // Material properties at intersection point
-  double t; // Intersection point: t*ray.direction + ray.origin
-  Vector3D normal; // Surface normal at intersection point
+  Material *m; // Material properties at intersection point
+  double t; // Distance from ray's origin along ray's direction vector to intersection point: t*ray.direction + ray.origin
+  Point3D q; // Intersection point
+  Vector3D n; // Surface normal at intersection point
 };
 
 #endif // CS488_ALGEBRA_HPP

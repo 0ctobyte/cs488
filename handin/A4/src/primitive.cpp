@@ -56,7 +56,8 @@ bool NonhierSphere::intersect(const Ray& ray, Intersection& j) const
     double t = (num_roots == 1) ? roots[0] : std::min<double>(roots[0], roots[1]);
     if(t < 0) return false;
     j.t = t;
-    j.normal = ((ray.origin() + j.t*ray.direction()) - m_pos).normalized();
+    j.q = ray.origin() + j.t*ray.direction();
+    j.n = ((ray.origin() + j.t*ray.direction()) - m_pos).normalized();
     return true;
   }
   
@@ -93,6 +94,7 @@ bool NonhierBox::intersect(const Ray& ray, Intersection& j) const
   if(tmax >= 0 && tmax >= tmin)
   {
     j.t = tmin;
+    j.q = ray.origin() + j.t*ray.direction();
 
     // Now we need to find the normal of the intersection point
     // For each face of the box, calculate the normal and check if the vector from the intersection point to a point on the face
@@ -116,7 +118,7 @@ bool NonhierBox::intersect(const Ray& ray, Intersection& j) const
       if(fabs(d) < std::numeric_limits<double>::epsilon())
       {
         // If d is close to zero than the intersection point lies on this face
-        j.normal = fn[i];
+        j.n = fn[i];
         break;
       }
     }

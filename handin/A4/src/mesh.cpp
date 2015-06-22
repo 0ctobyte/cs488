@@ -63,7 +63,8 @@ bool Mesh::intersect(const Ray& ray, Intersection& j) const
     if(in_bounds)
     {
       j.t = t;
-      j.normal = normal;
+      j.q = Q; 
+      j.n = normal;
       intersected = true;
     }
   }
