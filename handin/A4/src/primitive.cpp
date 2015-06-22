@@ -50,10 +50,12 @@ bool NonhierSphere::intersect(const Ray& ray, Intersection& j) const
   // If there is two roots, then one is the intersection with the sphere from the front as the ray enters the sphere
   // and the other is the intersection through the back as it leaves the sphere
   // For this case we only take the smallest t value since that is the point where the ray enters the sphere which
-  // will be the visible point of the sphere
+  // will be the visible point of the sphere. Of course t must not be negative otherwise it is behind the eye point
   if(num_roots > 0)
   {
-    j.t = (num_roots == 1) ? roots[0] : ((roots[0] < roots[1]) ? roots[0] : roots[1]);
+    double t = (num_roots == 1) ? roots[0] : ((roots[0] < roots[1]) ? roots[0] : roots[1]);
+    if(t < 0) return false;
+    j.t = t;
     j.normal = ((ray.origin() + j.t*ray.direction()) - m_pos).normalized();
     return true;
   }

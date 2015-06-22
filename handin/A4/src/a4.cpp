@@ -32,14 +32,14 @@ Matrix4x4 a4_get_unproject_matrix(int width, int height, double fov, double d, P
   return unproject;
 }
 
-Colour a4_phong_shading(const Ray& ray, const Intersection& i, const std::list<Light*>& lights, const Colour& ambient)
+Colour a4_lighting(const Ray& ray, const Intersection& i, const std::list<Light*>& lights, const Colour& ambient)
 {
   Colour final_colour(0, 0, 0);
 
   Point3D surface_point = ray.origin() + i.t*ray.direction();
   Vector3D normal = i.normal;
   PhongMaterial *material = dynamic_cast<PhongMaterial*>(i.material);
-
+  
   for(auto light : lights)
   {
     // Set up the parameters for the lights
@@ -75,7 +75,10 @@ Colour a4_phong_shading(const Ray& ray, const Intersection& i, const std::list<L
     // Calculate attenuation factor
     double attenuation = 1.0 / (light->falloff[0] + light->falloff[1]*distance_to_light + light->falloff[2]*(distance_to_light*distance_to_light));
 
-    Colour lighted = ambient * material->diffuse() + (attenuation * (diffuse + specular));
+    // if the light was blocked by another object then don't add it's contribution
+    double shadow = light->blocked ? 0.0 : 1.0;
+
+    Colour lighted = ambient * material->diffuse() + shadow * (attenuation * (diffuse + specular));
 
     final_colour = final_colour + lighted;
   }
@@ -129,14 +132,26 @@ void a4_render(// What to render
       Ray ray(eye, p-eye);
 
       // Test intersection of ray with scene
-      PhongMaterial material(Colour(0, 0, 0), Colour(0, 0, 0), 0);
       Intersection i;
-      i.material = &material;
 
       bool intersected = root->intersect(ray, i);
 
+      // Cast shadow rays to each of the light sources. If the ray intersects an object before reaching the light
+      // source then don't count that light sources contribution since it is being blocked
+      if(intersected)
+      {
+        // Move the hit position a little away from the object so the ray doesn't intersect from the originating object
+        Point3D hit = ray.origin() + (i.t-1.0)*ray.direction();
+        Intersection u;
+        for(auto light : lights)
+        {
+          Ray shadow(hit, light->position-hit);
+          light->blocked = root->intersect(shadow, u);
+        }
+      }
+
       Colour colour = Colour(ray.direction()[0], ray.direction()[1], ray.direction()[2]) * Colour(1.0, 1.0, 1.0) + Colour(0.3, 0.3, 0.3);
-      if(intersected) colour = a4_phong_shading(ray, i, lights, ambient);
+      if(intersected) colour = a4_lighting(ray, i, lights, ambient);
 
       img(x, y, 0) = colour.R();
       img(x, y, 1) = colour.G();

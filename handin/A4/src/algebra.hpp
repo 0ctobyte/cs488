@@ -193,7 +193,7 @@ public:
 
   double normalize();
 
-  Vector3D normalized()
+  Vector3D normalized() const
   {
     Vector3D v(v_[0], v_[1], v_[2]);
     v.normalize();
