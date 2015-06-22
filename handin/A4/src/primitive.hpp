@@ -16,11 +16,15 @@ public:
 class Sphere : public Primitive {
 public:
   virtual ~Sphere();
+
+  virtual bool intersect(const Ray& ray, Intersection& j) const;
 };
 
 class Cube : public Primitive {
 public:
   virtual ~Cube();
+
+  virtual bool intersect(const Ray& ray, Intersection& j) const;
 };
 
 class NonhierSphere : public Primitive {

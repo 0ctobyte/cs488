@@ -16,6 +16,7 @@ bool Mesh::intersect(const Ray& ray, Intersection& j) const
   // If the ray intersects with at least one of the faces then the ray intersects with the mesh
   // We have to check intersection with every single face to find the closest intersection
   bool intersected = false;
+  double prev_t = std::numeric_limits<double>::infinity();
   for(auto face : m_faces)
   {
     // We need three points in order to calculate the normal for the plane that contains the face
@@ -36,7 +37,7 @@ bool Mesh::intersect(const Ray& ray, Intersection& j) const
     if(t < 0) continue;
 
     // Alright now check if a previous intersection with another face is closer than this one
-    if(j.t < t) continue;
+    if(prev_t < t) continue;
 
     // So we have found the intersection point for the ray intersecting the *plane* that contains the face
     // Now we have to check if the intersection point is within the bounds of the actual face
@@ -62,7 +63,7 @@ bool Mesh::intersect(const Ray& ray, Intersection& j) const
     // Alright, so the intersection point is in bounds, update the Intersection object
     if(in_bounds)
     {
-      j.t = t;
+      prev_t = t;
       j.q = Q; 
       j.n = normal;
       intersected = true;

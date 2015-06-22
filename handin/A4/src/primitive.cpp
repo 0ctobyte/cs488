@@ -13,8 +13,20 @@ Sphere::~Sphere()
 {
 }
 
+bool Sphere::intersect(const Ray& ray, Intersection& j) const
+{
+  NonhierSphere sphere(Point3D(0.0, 0.0, 0.0), 1.0);
+  return sphere.intersect(ray, j);
+}
+
 Cube::~Cube()
 {
+}
+
+bool Cube::intersect(const Ray& ray, Intersection& j) const
+{
+  NonhierBox box(Point3D(0.0, 0.0, 0.0), 1.0);
+  return box.intersect(ray, j);
 }
 
 NonhierSphere::~NonhierSphere()
@@ -55,9 +67,8 @@ bool NonhierSphere::intersect(const Ray& ray, Intersection& j) const
   {
     double t = (num_roots == 1) ? roots[0] : std::min<double>(roots[0], roots[1]);
     if(t < 0) return false;
-    j.t = t;
-    j.q = ray.origin() + j.t*ray.direction();
-    j.n = ((ray.origin() + j.t*ray.direction()) - m_pos).normalized();
+    j.q = ray.origin() + t*ray.direction();
+    j.n = (j.q - m_pos).normalized();
     return true;
   }
   
@@ -93,14 +104,13 @@ bool NonhierBox::intersect(const Ray& ray, Intersection& j) const
   // tmax must also be greater than 0. If it isn't then the box is behind the eye point
   if(tmax >= 0 && tmax >= tmin)
   {
-    j.t = tmin;
-    j.q = ray.origin() + j.t*ray.direction();
+    double t = tmin;
 
     // Now we need to find the normal of the intersection point
     // For each face of the box, calculate the normal and check if the vector from the intersection point to a point on the face
     // is perpendicular to the normal. If it is then it is contained within that face and the normal can be used to shade the intersection point
     double x = m_pos[0], y = m_pos[1], z = m_pos[2], r = m_size;
-    Point3D Q = r_origin + j.t*ray.direction();
+    j.q = r_origin + t*ray.direction();
 
     // Calculate a face point and face normal for each of the 6 faces
     Point3D fp[6] = {Point3D(x+r, y, z), Point3D(x+r, y+r, z), Point3D(x+r, y, z+r), Point3D(x, y+r, z), Point3D(x, y+r, z+r), Point3D(x, y, z+r)};
@@ -114,7 +124,7 @@ bool NonhierBox::intersect(const Ray& ray, Intersection& j) const
 
     for(int i = 0; i < 6; i++)
     {
-      double d = (Q - fp[i]).dot(fn[i]);
+      double d = (j.q - fp[i]).dot(fn[i]);
       if(fabs(d) < std::numeric_limits<double>::epsilon())
       {
         // If d is close to zero than the intersection point lies on this face

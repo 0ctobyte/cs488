@@ -141,7 +141,7 @@ void a4_render(// What to render
       if(intersected)
       {
         // Move the hit position a little away from the object so the ray doesn't intersect from the originating object
-        Point3D hit = ray.origin() + (i.t-1.0)*ray.direction();
+        Point3D hit = ray.origin() + (0.99)*(i.q - ray.origin());
         Intersection u;
         for(auto light : lights)
         {

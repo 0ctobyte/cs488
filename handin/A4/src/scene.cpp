@@ -1,5 +1,6 @@
 #include "scene.hpp"
 #include <iostream>
+#include <cctype>
 
 SceneNode::SceneNode(const std::string& name)
   : m_name(name)
@@ -12,7 +13,7 @@ SceneNode::~SceneNode()
 
 void SceneNode::rotate(char axis, double angle)
 {
-  set_transform(m_trans.rotate(angle, (axis == 'x') ? 1.0 : 0.0, (axis == 'y') ? 1.0 : 0.0, (axis == 'z') ? 1.0 : 0.0));
+  set_transform(m_trans.rotate(angle, (tolower(axis) == 'x') ? 1.0 : 0.0, (tolower(axis) == 'y') ? 1.0 : 0.0, (tolower(axis) == 'z') ? 1.0 : 0.0));
 }
 
 void SceneNode::scale(const Vector3D& amount)
@@ -101,16 +102,12 @@ bool GeometryNode::intersect(const Ray& ray, Intersection& i) const
   bool intersects = m_primitive->intersect(r, j);
   if(intersects)
   {
-    if(j.t < i.t)
-    {
-      // We have to convert the intersection point from MCS->WCS and the normal from MCS->WCS
-      // Normals must be multiplied by the transpose of the inverse to throw away scaling (no translations either, but the normal is 
-      // a vector and vectors can't be translated) but preserve rotation
-      i.t = j.t;
-      i.q = get_transform() * j.q;
-      i.n = transNorm(get_inverse(), j.n);
-      i.m = get_material();
-    }
+    // We have to convert the intersection point from MCS->WCS and the normal from MCS->WCS
+    // Normals must be multiplied by the transpose of the inverse to throw away scaling (no translations either, but the normal is 
+    // a vector and vectors can't be translated) but preserve rotation
+    i.q = get_transform() * j.q;
+    i.n = transNorm(get_inverse(), j.n);
+    i.m = get_material();
   }
 
   return (intersects || SceneNode::intersect(ray, i));
