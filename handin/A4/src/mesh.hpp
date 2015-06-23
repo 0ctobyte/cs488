@@ -19,6 +19,9 @@ public:
 private:
   std::vector<Point3D> m_verts;
   std::vector<Face> m_faces;
+  NonhierSphere m_boundingBall;
+
+  NonhierSphere getBoundingBall(const std::vector<Point3D>& verts) const;
 
   friend std::ostream& operator<<(std::ostream& out, const Mesh& mesh);
 };

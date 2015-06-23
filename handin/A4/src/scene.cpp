@@ -13,17 +13,17 @@ SceneNode::~SceneNode()
 
 void SceneNode::rotate(char axis, double angle)
 {
-  set_transform(Matrix4x4().rotate(angle, (tolower(axis) == 'x') ? 1.0 : 0.0, (tolower(axis) == 'y') ? 1.0 : 0.0, (tolower(axis) == 'z') ? 1.0 : 0.0) * m_trans);
+  set_transform(m_trans.rotate(angle, (tolower(axis) == 'x') ? 1.0 : 0.0, (tolower(axis) == 'y') ? 1.0 : 0.0, (tolower(axis) == 'z') ? 1.0 : 0.0));
 }
 
 void SceneNode::scale(const Vector3D& amount)
 {
-  set_transform(Matrix4x4().scale(amount) * m_trans);
+  set_transform(m_trans.scale(amount));
 }
 
 void SceneNode::translate(const Vector3D& amount)
 {
-  set_transform(Matrix4x4().translate(amount) * m_trans);
+  set_transform(m_trans.translate(amount));
 }
 
 bool SceneNode::is_joint() const
@@ -34,7 +34,7 @@ bool SceneNode::is_joint() const
 bool SceneNode::intersect(const Ray& ray, Intersection& i) const
 {
   // Transform the ray from WCS->MCS for this node
-  Ray r(get_inverse() * ray.origin(), get_inverse() * ray.direction());
+  Ray r(m_invtrans * ray.origin(), m_invtrans * ray.direction());
 
   bool intersects = false;
   for(auto child : m_children)
@@ -97,7 +97,7 @@ bool GeometryNode::intersect(const Ray& ray, Intersection& i) const
   // material.
 
   // But first transform ray to geometry's model coordinates (inverse transform from WCS->MCS)
-  Ray r(get_inverse() * ray.origin(), get_inverse() * ray.direction());
+  Ray r(m_invtrans * ray.origin(), m_invtrans * ray.direction());
 
   Intersection j;
   bool intersects = m_primitive->intersect(r, j);
