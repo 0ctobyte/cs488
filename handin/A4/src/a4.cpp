@@ -72,12 +72,37 @@ Colour a4_lighting(const Ray& ray, const Intersection& i, const Light* light, co
   // Calculate attenuation factor
   double attenuation = 1.0 / (light->falloff[0] + light->falloff[1]*distance_to_light + light->falloff[2]*(distance_to_light*distance_to_light));
 
-  // if the light was blocked by another object then don't add it's contribution
-  double shadow = light->blocked ? 0.0 : 1.0;
-
-  Colour lighted = ambient * material->diffuse() + shadow * (attenuation * (diffuse + specular));
+  Colour lighted = ambient * material->diffuse() + attenuation * (diffuse + specular);
 
   return lighted;
+}
+
+Colour a4_trace_ray(const Ray& ray, const SceneNode *root, const Light* light, const Colour& ambient, const Colour& bg)
+{
+  // Test intersection of ray with scene for each light source
+  Colour colour = bg;
+  Intersection i;
+
+  bool intersected = root->intersect(ray, i);
+
+  if(intersected)
+  {
+    // Cast shadow rays to the light source. If the ray intersects an object before reaching the light
+    // source then don't count that light sources contribution since it is being blocked
+    // Move the hit position a little away from the object so the ray doesn't intersect from the originating object
+    Point3D hit = ray.origin() + (0.99)*(i.q - ray.origin());
+    Ray shadow(hit, light->position-hit);
+    Intersection u;
+    bool blocked = root->intersect(shadow, u);
+
+    // Make sure to check if intersection point is before light source
+    if((u.q - shadow.origin()).length() > shadow.direction().length()) blocked = false;
+
+    // Perform phong shading at intersection point
+    colour = blocked ? ambient * dynamic_cast<PhongMaterial*>(i.m)->diffuse() : a4_lighting(ray, i, light, ambient);
+  }
+
+  return colour;
 }
 
 void a4_render(// What to render
@@ -126,39 +151,14 @@ void a4_render(// What to render
       // Create the ray with origin at the eye point
       Ray ray(eye, p-eye);
 
-      // Test intersection of ray with scene for each light source
+      // Background colour. a4_trace_ray returns this if no intersections
+      Colour bg = ((x+y) & 0x10) ? (double)y/height * Colour(1.0, 1.0, 1.0) : Colour(0.0, 0.0, 0.0);
+
+      // Cast rays for each light that is in the scene
+      // Accumulate the colours returned
       Colour colour(0.0, 0.0, 0.0);
-      for(auto light : lights)
-      {
-        Intersection i;
-
-        bool intersected = root->intersect(ray, i);
-
-        // Cast shadow rays to each of the light sources. If the ray intersects an object before reaching the light
-        // source then don't count that light sources contribution since it is being blocked
-        if(intersected)
-        {
-          // Move the hit position a little away from the object so the ray doesn't intersect from the originating object
-          Point3D hit = ray.origin() + (0.99)*(i.q - ray.origin());
-          Intersection u;
-          Ray shadow(hit, light->position-hit);
-          bool blocked = root->intersect(shadow, u);
-
-          // Make sure to check if intersection point is before light source
-          if((u.q - shadow.origin()).length() > shadow.direction().length()) blocked = false;
-
-          light->blocked = blocked;
-
-          // Perform phong shading at intersection point
-          colour = colour + a4_lighting(ray, i, light, ambient);
-        }
-        else
-        {
-          colour = ((x+y) & 0x10) ? (double)y/height * Colour(1.0, 1.0, 1.0) : Colour(0.0, 0.0, 0.0);
-          //colour = Colour(ray.direction()[0], ray.direction()[1], ray.direction()[2]) * Colour(1.0, 1.0, 1.0) + Colour(0.3, 0.3, 0.3);
-        }
-      }
-
+      for(auto light : lights) colour = colour + a4_trace_ray(ray, root, light, ambient, bg);
+      
       img(x, y, 0) = colour.R();
       img(x, y, 1) = colour.G();
       img(x, y, 2) = colour.B();
