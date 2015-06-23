@@ -117,6 +117,6 @@ l1_radius = 2500.0
 l1_attenuation = {1.0, 2.0/l1_radius, 1.0/(l1_radius*l1_radius)}
 
 gr.render(scene,
-	  'simple_cows.png', 512, 512,
+	  'simple-cows.png', 512, 512,
 	  {0, 2, 30}, {0, 0, -1}, {0, 1, 0}, 50,
 	  {0.4, 0.4, 0.4}, {gr.light({200, 202, 430}, {0.8, 0.8, 0.8}, l1_attenuation)})
