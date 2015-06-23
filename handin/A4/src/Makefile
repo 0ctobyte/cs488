@@ -3,13 +3,14 @@ OBJECTS = $(SOURCES:.cpp=.o)
 DEPENDS = $(SOURCES:.cpp=.d)
 LDFLAGS = $(shell pkg-config --libs lua5.1) -llua5.1 -lpng
 CPPFLAGS = $(shell pkg-config --cflags lua5.1)
-CXXFLAGS = $(CPPFLAGS) -Wno-c++11-extensions -W -Wall -g
+CXXFLAGS = $(CPPFLAGS) -std=c++11 -Wno-c++0x-compat -W -Wall -g
 CXX = g++
 MAIN = rt
 
 ifeq ($(shell uname), Darwin)
 LDFLAGS = -L/usr/local/opt/libpng12/lib $(shell pkg-config --libs lua5.1) -lpng
 CPPFLAGS = -I/usr/local/opt/libpng12/include $(shell pkg-config --cflags lua5.1)
+CXXFLAGS += -Wno-c++11-extensions
 endif
 
 all: $(MAIN)
