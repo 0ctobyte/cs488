@@ -81,6 +81,8 @@ NonhierBox::~NonhierBox()
 
 bool NonhierBox::intersect(const Ray& ray, Intersection& j) const
 {
+  // This algorithm is kinda inefficient but it fucking works so whatevs
+  // First gather the points and normals for all faces
   double x = m_pos[0], y = m_pos[1], z = m_pos[2], r = m_size;
   Point3D fp[6][4] = {
     {Point3D(x, y, z), Point3D(x+r, y, z), Point3D(x+r, y+r, z), Point3D(x, y+r, z)},
@@ -99,6 +101,9 @@ bool NonhierBox::intersect(const Ray& ray, Intersection& j) const
     (fp[5][2]-fp[5][0]).cross(fp[5][1]-fp[5][0]).normalized(),
   };
 
+  // This works similar to polygon intersection where we find the parameter t
+  // which gives the intersection point of the ray with the plane containing the
+  // face. We then check if the point is "inside" each of the edges of the face
   double prev_t = std::numeric_limits<double>::infinity();
   bool intersection = false;
   for(int i = 0; i < 6; i++)
@@ -112,7 +117,9 @@ bool NonhierBox::intersect(const Ray& ray, Intersection& j) const
     if(prev_t < t) continue;
 
     Point3D Q = ray.origin() + t*ray.direction();
-  
+
+    // The cross product of the two vectors should give a vector that is in a similar direction to
+    // the normal of the face
     if((fp[i][0]-fp[i][1]).cross(Q-fp[i][1]).dot(fn[i]) < 0) continue;
     if((fp[i][1]-fp[i][2]).cross(Q-fp[i][2]).dot(fn[i]) < 0) continue;
     if((fp[i][2]-fp[i][3]).cross(Q-fp[i][3]).dot(fn[i]) < 0) continue;
