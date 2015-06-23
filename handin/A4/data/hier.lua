@@ -95,6 +95,6 @@ l2_attenuation = {1.0, 2.0/l2_radius, 1.0/(l2_radius*l2_radius)}
 l1 = gr.light({200,200,400}, {0.8, 0.8, 0.8}, l1_attenuation) --{1, 0, 0})
 l2 = gr.light({0, 5, -20}, {0.4, 0.4, 0.8}, l2_attenuation) --{1, 0, 0})
 
-gr.render(scene, 'hier.png', 256, 256, 
+gr.render(scene, 'hier.png', 512, 512, 
 	  {0, 0, 0,}, {0, 0, -1}, {0, 1, 0}, 50,
 	  {0.4, 0.4, 0.4}, {l1, l2})
