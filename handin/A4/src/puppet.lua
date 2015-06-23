@@ -9,6 +9,8 @@ red = gr.material({1.0, 0.0, 0.0}, {0.1, 0.1, 0.1}, 10)
 blue = gr.material({0.0, 0.0, 1.0}, {0.1, 0.1, 0.1}, 10)
 green = gr.material({0.0, 1.0, 0.0}, {0.1, 0.1, 0.1}, 10)
 white = gr.material({1.0, 1.0, 1.0}, {0.1, 0.1, 0.1}, 10)
+white2 = gr.material({1.0, 1.0, 1.0}, {0.1, 0.1, 0.1}, 40)
+blue2 = gr.material({0.0, 0.0, 1.0}, {0.1, 0.1, 0.1}, 80)
 
 torso = gr.sphere('torso')
 rootnode:add_child(torso)
@@ -206,14 +208,67 @@ lhand:set_material(green)
 lhand:scale(0.4, 0.6, 0.4)
 lhand:translate(0.0, -1.0, 0.0)
 
+s = gr.sphere('s')
+rootnode:add_child(s)
+s:set_material(white2)
+s:translate(0.0, -20.0, 0.0)
+s:scale(15.0, 10.0, 10.0)
+
+b = gr.cube('b')
+rootnode:add_child(b)
+b:set_material(blue2)
+b:translate(-5.0, -2.0, 2.0)
+b:scale(2.0, 2.0, 2.0)
+b:rotate('y', 45.0)
+
+icosa = gr.mesh( 'icosahedron', {
+	{	 1.618034	,	 1.,	 0.},
+	{	-1.618034	,	 1.,	 0.},
+	{	 1.618034	,	-1.,	 0.},
+	{	-1.618034	,	-1.,	 0.},
+	{	 1.,	 0.,	 1.618034},
+	{	 1.,	 0.,	-1.618034},
+	{	-1.,	 0.,	 1.618034},
+	{	-1.,	 0.,	-1.618034},
+	{	 0.,	 1.618034	,	 1.},
+	{	 0.,	-1.618034	,	 1.},
+	{	 0.,	 1.618034	,	-1.},
+	{	 0.,	-1.618034	,	-1.}
+	   }, {
+    { 0 , 8 , 4},
+    { 0 , 5 , 10},
+    { 2 , 4 , 9},
+    { 2 , 11 , 5},
+    { 1 , 6 , 8},
+    { 1 , 10 , 7},
+    { 3 , 9 , 6},
+    { 3 , 7 , 11},
+    { 0 , 10 , 8},
+    { 1 , 8 , 10},
+    { 2 , 9 , 11},
+    { 3 , 11 , 9},
+    { 4 , 2 , 0},
+    { 5 , 0 , 2},
+    { 6 , 1 , 3},
+    { 7 , 3 , 1},
+    { 8 , 6 , 4},
+    { 9 , 4 , 6},
+    { 10 , 5 , 7},
+    { 11 , 7 , 5}
+} )
+rootnode:add_child(icosa)
+icosa:set_material(red)
+icosa:translate(-8.0, 8.0, 0.0)
+icosa:scale(2.0, 2.0, 2.0)
+
 rootnode:translate(0.0, 2.0, -20.0)
 
 l1_radius = 2500.0
 
 l1_attenuation = {1.0, 2.0/l1_radius, 1.0/(l1_radius*l1_radius)}
 
-white_light = gr.light({-100.0, 150.0, 400.0}, {0.9, 0.9, 0.9}, l1_attenuation)
+white_light = gr.light({-100.0, 150.0, 100.0}, {0.9, 0.9, 0.9}, l1_attenuation)
 
 gr.render(rootnode, 'puppet.png', 512, 512,
-	  {0, 0, 5.0}, {0, 0, -1}, {0, 1, 0}, 50,
+	  {0, 0, 10.0}, {0, 0, -1}, {0, 1, 0}, 50,
 	  {0.3, 0.3, 0.3}, {white_light})
