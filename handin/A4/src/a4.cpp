@@ -33,7 +33,7 @@ Matrix4x4 a4_get_unproject_matrix(int width, int height, double fov, double d, P
   return unproject;
 }
 
-Colour a4_lighting(const Ray& ray, const Intersection& i, const Light* light, const Colour& ambient)
+Colour a4_lighting(const Ray& ray, const Intersection& i, const Light* light, const Colour& ambient, const Colour& reflected_colour, bool blocked)
 {
   Point3D surface_point = i.q;
   Vector3D normal = i.n.normalized();
@@ -69,15 +69,18 @@ Colour a4_lighting(const Ray& ray, const Intersection& i, const Light* light, co
   // Calculate the specular colour component
   Colour specular = specular_brightness * material->specular() * light->colour;
 
+  // Caluclate the reflection color
+  Colour reflection = reflected_colour * material->specular();
+
   // Calculate attenuation factor
   double attenuation = 1.0 / (light->falloff[0] + light->falloff[1]*distance_to_light + light->falloff[2]*(distance_to_light*distance_to_light));
 
-  Colour lighted = ambient * material->diffuse() + attenuation * (diffuse + specular);
+  Colour lighted = ambient * material->diffuse() + (int)(!blocked) * attenuation * (diffuse + specular + reflection);
 
   return lighted;
 }
 
-Colour a4_trace_ray(const Ray& ray, const SceneNode *root, const Light* light, const Colour& ambient, const Colour& bg)
+Colour a4_trace_ray(const Ray& ray, const SceneNode *root, const Light* light, const Colour& ambient, const Colour& bg, int recurse_level)
 {
   // Test intersection of ray with scene for each light source
   Colour colour = bg;
@@ -98,8 +101,16 @@ Colour a4_trace_ray(const Ray& ray, const SceneNode *root, const Light* light, c
     // Make sure to check if intersection point is before light source
     if((u.q - shadow.origin()).length() > shadow.direction().length()) blocked = false;
 
+    Colour reflected_colour(0.0, 0.0, 0.0);
+    if(recurse_level > 0) 
+    {
+      Vector3D N = i.n.normalized();
+      Ray reflected_ray(hit, ray.direction() - 2*ray.direction().dot(N)*N);
+      reflected_colour = a4_trace_ray(reflected_ray, root, light, ambient, reflected_colour, --recurse_level);
+    }
+
     // Perform phong shading at intersection point
-    colour = blocked ? ambient * dynamic_cast<PhongMaterial*>(i.m)->diffuse() : a4_lighting(ray, i, light, ambient);
+    colour = a4_lighting(ray, i, light, ambient, reflected_colour, blocked);
   }
 
   return colour;
@@ -157,7 +168,7 @@ void a4_render(// What to render
       // Cast rays for each light that is in the scene
       // Accumulate the colours returned
       Colour colour(0.0, 0.0, 0.0);
-      for(auto light : lights) colour = colour + a4_trace_ray(ray, root, light, ambient, bg);
+      for(auto light : lights) colour = colour + a4_trace_ray(ray, root, light, ambient, bg, 1);
       
       img(x, y, 0) = colour.R();
       img(x, y, 1) = colour.G();
