@@ -47,6 +47,6 @@ l2_attenuation = {1.0, 2.0/l2_radius, 1.0/(l2_radius*l2_radius)}
 white_light = gr.light({-100.0, 150.0, 400.0}, {0.9, 0.9, 0.9}, l1_attenuation)
 orange_light = gr.light({400.0, 100.0, 150.0}, {0.7, 0.0, 0.7}, l2_attenuation)
 
-gr.render(scene_root, 'nonhier.png', 256, 256,
+gr.render(scene_root, 'nonhier.png', 512, 512,
 	  {0, 0, 800}, {0, 0, -1}, {0, 1, 0}, 50,
 	  {0.3, 0.3, 0.3}, {white_light, orange_light})
