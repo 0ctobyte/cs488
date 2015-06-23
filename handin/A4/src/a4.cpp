@@ -154,7 +154,8 @@ void a4_render(// What to render
         }
         else
         {
-          colour = Colour(ray.direction()[0], ray.direction()[1], ray.direction()[2]) * Colour(1.0, 1.0, 1.0) + Colour(0.3, 0.3, 0.3);
+          colour = ((x+y) & 0x10) ? (double)y/height * Colour(1.0, 1.0, 1.0) : Colour(0.0, 0.0, 0.0);
+          //colour = Colour(ray.direction()[0], ray.direction()[1], ray.direction()[2]) * Colour(1.0, 1.0, 1.0) + Colour(0.3, 0.3, 0.3);
         }
       }
 

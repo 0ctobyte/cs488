@@ -48,7 +48,6 @@ bool SceneNode::intersect(const Ray& ray, Intersection& i) const
   {
     i.q = m_trans * i.q;
     i.n = transNorm(m_invtrans, i.n);
-    i.n = i.n;
   }
 
   return intersects;
