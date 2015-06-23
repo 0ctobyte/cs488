@@ -10,9 +10,9 @@ How to invoke my program:
 ./rt <script_file>
 
 How to use my extra features: 
-I have implemented mirror reflections as my extra feature.
-This can be seen in the screenshot01.png
-sample.lua contains my special scene which is the puppet created in A3.
+I have implemented mirror reflections as my extra feature. This can be seen in the screenshot01.png.
+sample.lua contains my special scene which is the puppet created in A3. This can be seen in sample.png.
+screenshot02.png is just a compilation of all the ray traced images in the data directory.
 
 I have created the following data files, which are in the data directory:
 simple-cows.png
