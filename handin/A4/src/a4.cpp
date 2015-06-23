@@ -6,7 +6,8 @@
 
 Matrix4x4 a4_get_unproject_matrix(int width, int height, double fov, double d, Point3D eye, Vector3D view, Vector3D up)
 {
-  double h = 2.0*d*tan(fov / 2.0); // height of projection plane based field of view and distance to the plane
+  double fov_r = fov * M_PI / 180.0;
+  double h = 2.0*d*tan(fov_r / 2.0); // height of projection plane based field of view and distance to the plane
   
   // First translate the pixel so that it is centered at the origin in the projection plane (origin is in the middle of the screen)
   Matrix4x4 viewport_translate = Matrix4x4().translate(-(double)width / 2.0, -(double)height / 2.0, d);
