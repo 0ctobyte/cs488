@@ -81,6 +81,49 @@ NonhierBox::~NonhierBox()
 
 bool NonhierBox::intersect(const Ray& ray, Intersection& j) const
 {
-  return false;
+  double x = m_pos[0], y = m_pos[1], z = m_pos[2], r = m_size;
+  Point3D fp[6][4] = {
+    {Point3D(x, y, z), Point3D(x+r, y, z), Point3D(x+r, y+r, z), Point3D(x, y+r, z)},
+    {Point3D(x, y+r, z), Point3D(x+r, y+r, z), Point3D(x+r, y+r, z+r), Point3D(x, y+r, z+r)},
+    {Point3D(x+r, y, z), Point3D(x+r, y, z+r), Point3D(x+r, y+r, z+r), Point3D(x+r, y+r, z)},
+    {Point3D(x, y, z), Point3D(x, y+r, z), Point3D(x, y+r, z+r), Point3D(x, y, z+r)},
+    {Point3D(x, y, z+r), Point3D(x, y+r, z+r), Point3D(x+r, y+r, z+r), Point3D(x+r, y, z+r)},
+    {Point3D(x, y, z), Point3D(x, y, z+r), Point3D(x+r, y, z+r), Point3D(x+r, y, z)}
+  };
+  Vector3D fn[6] = {
+    (fp[0][2]-fp[0][0]).cross(fp[0][1]-fp[0][0]).normalized(),
+    (fp[1][2]-fp[1][0]).cross(fp[1][1]-fp[1][0]).normalized(),
+    (fp[2][2]-fp[2][0]).cross(fp[2][1]-fp[2][0]).normalized(),
+    (fp[3][2]-fp[3][0]).cross(fp[3][1]-fp[3][0]).normalized(),
+    (fp[4][2]-fp[4][0]).cross(fp[4][1]-fp[4][0]).normalized(),
+    (fp[5][2]-fp[5][0]).cross(fp[5][1]-fp[5][0]).normalized(),
+  };
+
+  double prev_t = std::numeric_limits<double>::infinity();
+  bool intersection = false;
+  for(int i = 0; i < 6; i++)
+  {
+    double den = fn[i].dot(ray.direction());
+    if(fabs(den) < std::numeric_limits<double>::epsilon()) continue;
+
+    double t = (fp[i][0] - ray.origin()).dot(fn[i]) / den;
+    if(t < 0) continue;
+
+    if(prev_t < t) continue;
+
+    Point3D Q = ray.origin() + t*ray.direction();
+  
+    if((fp[i][0]-fp[i][1]).cross(Q-fp[i][1]).dot(fn[i]) < 0) continue;
+    if((fp[i][1]-fp[i][2]).cross(Q-fp[i][2]).dot(fn[i]) < 0) continue;
+    if((fp[i][2]-fp[i][3]).cross(Q-fp[i][3]).dot(fn[i]) < 0) continue;
+    if((fp[i][3]-fp[i][0]).cross(Q-fp[i][0]).dot(fn[i]) < 0) continue;
+
+    prev_t = t;
+    intersection = true;
+    j.q = Q;
+    j.n = fn[i];
+  }
+
+  return intersection;
 }
 
