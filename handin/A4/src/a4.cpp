@@ -13,7 +13,7 @@ Matrix4x4 a4_get_unproject_matrix(int width, int height, double fov, double d, P
   Matrix4x4 viewport_translate = Matrix4x4().translate(-(double)width / 2.0, -(double)height / 2.0, d);
 
   // Then scale it to the projection plane such that aspect ratio is maintained and we have a right handed coordinate system
-  Matrix4x4 viewport_scale = Matrix4x4().scale(-h / (double)height, h / (double)height, 1.0);
+  Matrix4x4 viewport_scale = Matrix4x4().scale(-h / (double)height, -h / (double)height, 1.0);
 
   // Calculate the basis for the view coordinate system
   view.normalize();
