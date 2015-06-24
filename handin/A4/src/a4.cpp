@@ -100,11 +100,11 @@ Colour a4_trace_ray(const Ray& ray, const SceneNode *root, const Light* light, c
     if((u.q - shadow.origin()).length() > (light->position-shadow.origin()).length()) blocked = false;
 
     Colour reflected_colour(0.0, 0.0, 0.0);
-    //if(recurse_level > 0) 
-    //{
-    //  Ray reflected_ray(hit, ray.direction() - 2*ray.direction().dot(i.n)*i.n);
-    //  reflected_colour = a4_trace_ray(reflected_ray, root, light, ambient, reflected_colour, --recurse_level);
-    //}
+    if(recurse_level > 0) 
+    {
+      Ray reflected_ray(hit, ray.direction() - 2*ray.direction().dot(i.n)*i.n);
+      reflected_colour = a4_trace_ray(reflected_ray, root, light, ambient, reflected_colour, --recurse_level);
+    }
 
     // Perform phong shading at intersection point
     colour = a4_lighting(ray, i, light, ambient, reflected_colour, blocked);
