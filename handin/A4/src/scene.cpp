@@ -44,7 +44,7 @@ bool SceneNode::intersect(const Ray& ray, Intersection& i) const
     {
       // We need to see if this intersection point is closer than the previous intersection point
       // If it is than replace the previous intersection
-      if(std::isinf(i.q[0]) || std::isinf(i.q[1]) || std::isinf(i.q[2]) || ((m_trans*j.q)-r.origin()).length() < ((m_trans*i.q)-r.origin()).length()) i = j;
+      if(std::isinf(i.q[0]) || std::isinf(i.q[1]) || std::isinf(i.q[2]) || (j.q-r.origin()).length() < (i.q-r.origin()).length()) i = j;
       intersects = true;
     }
   }
