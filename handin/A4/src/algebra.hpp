@@ -579,21 +579,26 @@ private:
 class Intersection {
 public:
   Intersection() 
-    : m(NULL)
-    , q(std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity())
+    : q(std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity())
     , n(0.0, 0.0, 0.0)
+    , m(NULL)
     //, t(std::numeric_limits<double>::infinity())
   {}
+  Intersection(const Point3D q, const Vector3D n, const Material* m)
+    : q(q)
+    , n(n)
+    , m(m)
+  {}
   Intersection(const Intersection& other)
-    : m(other.m)
-    , q(other.q)
+    : q(other.q)
     , n(other.n.normalized())
+    , m(other.m)
     //, t(other.t)
   {}
 
-  Material *m; // Material properties at intersection point
   Point3D q; // Intersection point
   Vector3D n; // Surface normal at intersection point
+  const Material *m; // Material properties at intersection point
   //double t; // Distance from ray's origin along ray's direction vector to intersection point: t*ray.direction + ray.origin
 };
 

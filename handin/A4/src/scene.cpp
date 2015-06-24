@@ -53,8 +53,11 @@ bool SceneNode::intersect(const Ray& ray, Intersection& i) const
   // We have to convert the intersection point from MCS->WCS and the normal from MCS->WCS
   // Normals must be multiplied by the transpose of the inverse to throw away scaling (no translations either, but the normal is 
   // a vector and vectors can't be translated) but preserve rotation
-  i.q = m_trans * i.q;
-  i.n = transNorm(m_invtrans, i.n).normalized();
+  if(intersects)
+  {
+    i.q = m_trans * i.q;
+    i.n = transNorm(m_invtrans, i.n).normalized();
+  }
   
   return intersects;
 }
@@ -99,8 +102,14 @@ bool GeometryNode::intersect(const Ray& ray, Intersection& i) const
   // But first transform ray to geometry's model coordinates (inverse transform from WCS->MCS)
   Ray r(m_invtrans * ray.origin(), m_invtrans * ray.direction());
 
-  bool intersects = m_primitive->intersect(r, i);
-  if(intersects) i.m = get_material();
+  Intersection k;
+  bool intersects = m_primitive->intersect(r, k);
+  if(intersects) 
+  {
+    i.q = m_trans * k.q;
+    i.n = transNorm(m_invtrans, k.n).normalized();
+    i.m = m_material;
+  }
 
   return (intersects || SceneNode::intersect(ray, i));
 }
