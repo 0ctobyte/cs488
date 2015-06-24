@@ -16,6 +16,7 @@ torso = gr.sphere('torso')
 rootnode:add_child(torso)
 torso:set_material(white)
 torso:scale(1.0, 4.0, 1.0);
+torso:translate(0.0, 0.3, 0.0);
 
 -- Hips
 hips = gr.sphere('hips')
