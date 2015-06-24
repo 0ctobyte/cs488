@@ -144,7 +144,8 @@ void a4_render(// What to render
   std::cerr << "});" << std::endl;
 
   // Get pixel unprojection matrix
-  Matrix4x4 unproject = a4_get_unproject_matrix(width, height, fov, 1.0, eye, view, up);
+  double d = view.length();
+  Matrix4x4 unproject = a4_get_unproject_matrix(width, height, fov, d, eye, view, up);
     
   // For now, just make a sample image.
 
