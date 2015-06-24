@@ -36,7 +36,7 @@ Matrix4x4 a4_get_unproject_matrix(int width, int height, double fov, double d, P
 Colour a4_lighting(const Ray& ray, const Intersection& i, const Light* light, const Colour& ambient, const Colour& reflected_colour, bool blocked)
 {
   Point3D surface_point = i.q;
-  Vector3D normal = i.n.normalized();
+  Vector3D normal = i.n;
   PhongMaterial *material = dynamic_cast<PhongMaterial*>(i.m);
   
   // Set up the parameters for the lights
@@ -68,7 +68,7 @@ Colour a4_lighting(const Ray& ray, const Intersection& i, const Light* light, co
   Colour specular = specular_brightness * material->specular() * light->colour;
 
   // Caluclate the reflection color
-  Colour reflection = reflected_colour * material->specular();
+  Colour reflection = material->specular() * reflected_colour; 
 
   // Calculate attenuation factor
   double attenuation = 1.0 / (light->falloff[0] + light->falloff[1]*distance_to_light + light->falloff[2]*(distance_to_light*distance_to_light));
@@ -91,7 +91,7 @@ Colour a4_trace_ray(const Ray& ray, const SceneNode *root, const Light* light, c
     // Cast shadow rays to the light source. If the ray intersects an object before reaching the light
     // source then don't count that light sources contribution since it is being blocked
     // Move the hit position a little away from the object so the ray doesn't intersect from the originating object
-    Point3D hit = ray.origin() + (0.99)*(i.q - ray.origin());
+    Point3D hit = i.q + (1e-9)*i.n;
     Ray shadow(hit, light->position-hit);
     Intersection u;
     bool blocked = root->intersect(shadow, u);
@@ -102,8 +102,7 @@ Colour a4_trace_ray(const Ray& ray, const SceneNode *root, const Light* light, c
     Colour reflected_colour(0.0, 0.0, 0.0);
     if(recurse_level > 0) 
     {
-      Vector3D N = i.n.normalized();
-      Ray reflected_ray(hit, ray.direction() - 2*ray.direction().dot(N)*N);
+      Ray reflected_ray(hit, ray.direction() - 2*ray.direction().dot(i.n)*i.n);
       reflected_colour = a4_trace_ray(reflected_ray, root, light, ambient, reflected_colour, --recurse_level);
     }
 
