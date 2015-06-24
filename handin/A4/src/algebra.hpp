@@ -555,11 +555,11 @@ class Ray {
 public:
   Ray(const Point3D& origin, const Vector3D& direction)
     : origin_(origin)
-    , direction_(direction)
+    , direction_(direction.normalized())
   {}
   Ray(const Ray& other)
     : origin_(other.origin())
-    , direction_(other.direction())
+    , direction_(other.direction().normalized())
   {}
 
   Point3D origin() const
@@ -587,7 +587,7 @@ public:
   Intersection(const Intersection& other)
     : m(other.m)
     , q(other.q)
-    , n(other.n)
+    , n(other.n.normalized())
     //, t(other.t)
   {}
 

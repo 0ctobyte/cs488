@@ -55,12 +55,10 @@ Colour a4_lighting(const Ray& ray, const Intersection& i, const Light* light, co
   // Calculate the angle of reflectance
   // The incidence vector is the vector surface_to_light but in the opposite direction
   Vector3D incidence = -surface_to_light;
-  Vector3D reflected = incidence - 2*(incidence.dot(normal))*normal;
-  reflected.normalize();
+  Vector3D reflected = (incidence - 2*(incidence.dot(normal))*normal).normalized();
 
   // Calculate the vector from the eye point to the surface point
-  Vector3D surface_to_eye = ray.origin() - surface_point;
-  surface_to_eye.normalize();
+  Vector3D surface_to_eye = (ray.origin() - surface_point).normalized();
 
   // Calculate the specular brightness
   // Can't have specular highlights if no diffuse lighting at the point!
@@ -99,7 +97,7 @@ Colour a4_trace_ray(const Ray& ray, const SceneNode *root, const Light* light, c
     bool blocked = root->intersect(shadow, u);
 
     // Make sure to check if intersection point is before light source
-    if((u.q - shadow.origin()).length() > shadow.direction().length()) blocked = false;
+    if((u.q - shadow.origin()).length() > (light->position-shadow.origin()).length()) blocked = false;
 
     Colour reflected_colour(0.0, 0.0, 0.0);
     if(recurse_level > 0) 

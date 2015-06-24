@@ -54,7 +54,7 @@ bool SceneNode::intersect(const Ray& ray, Intersection& i) const
   // Normals must be multiplied by the transpose of the inverse to throw away scaling (no translations either, but the normal is 
   // a vector and vectors can't be translated) but preserve rotation
   i.q = m_trans * i.q;
-  i.n = transNorm(m_invtrans, i.n);
+  i.n = transNorm(m_invtrans, i.n).normalized();
   
   return intersects;
 }

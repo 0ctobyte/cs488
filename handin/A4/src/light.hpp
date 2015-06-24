@@ -11,7 +11,6 @@ struct Light {
   Colour colour;
   Point3D position;
   double falloff[3];
-  bool blocked;
 };
 
 std::ostream& operator<<(std::ostream& out, const Light& l);
