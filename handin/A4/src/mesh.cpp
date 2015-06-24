@@ -48,7 +48,8 @@ bool Mesh::intersect(const Ray& ray, Intersection& j) const
 
   // Check if bounding ball has been intersected first
   // If not then the mesh cannot have been intersected
-  bool bball_intersected = m_boundingBall.intersect(ray, j);
+  Intersection k;
+  bool bball_intersected = m_boundingBall.intersect(ray, k);
   if(bball_intersected)
   {
     // Loop through each face and check if there is an intersection
